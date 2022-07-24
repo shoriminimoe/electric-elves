@@ -1,4 +1,28 @@
+import asyncio
+import threading
+
 import pygame
+import websockets
+
+
+async def send(socket):
+    """Sends data to the server"""
+    while True:
+        msg = 'test'
+        await socket.send(msg)
+        await asyncio.sleep(0.1)
+
+
+async def recv(socket):
+    """Recieves data from the server"""
+    while True:
+        print(await socket.recv())
+
+
+async def connect():
+    """Joins the websocket server"""
+    async with websockets.connect("ws://localhost:8001") as socket:
+        await asyncio.gather(recv(socket), send(socket))
 
 
 def main() -> None:
@@ -9,6 +33,8 @@ def main() -> None:
     screen_size = (800, 600)
     screen = pygame.display.set_mode(screen_size)
 
+    clock = pygame.time.Clock()
+
     font = pygame.font.SysFont(None, 24)
 
     prey = pygame.Rect(300, 200, 10, 10)
@@ -17,13 +43,18 @@ def main() -> None:
     messages = ["[SERVER] Test Message 1", "[SERVER] Test Message 2"]
     message_window = pygame.Rect(500, 0, 300, 600)
 
-    # TODO: Connect to the server!
+    # Connect to the server!
+    socket_thread = threading.Thread(target=asyncio.run, args=(connect(),))
+    socket_thread.daemon = True
+    socket_thread.start()
 
     while True:
         for event in pygame.event.get():
             # Check if window should be closed
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 return
+
+        clock.tick(60)
 
         screen.fill("black")
 
