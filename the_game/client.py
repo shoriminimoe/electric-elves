@@ -21,7 +21,7 @@ def main() -> None:
         for event in pygame.event.get():
             # Check if window should be closed
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                pygame.quit()
+                return
 
         screen.fill((0, 0, 0))
         pygame.draw.rect(screen, (0, 0, 255), (prey_position[0], prey_position[1], prey_size[0], prey_size[1]))
