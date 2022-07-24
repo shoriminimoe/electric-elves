@@ -33,6 +33,8 @@ def main() -> None:
     screen_size = (800, 600)
     screen = pygame.display.set_mode(screen_size)
 
+    clock = pygame.time.Clock()
+
     font = pygame.font.SysFont(None, 24)
 
     prey = pygame.Rect(300, 200, 10, 10)
@@ -51,6 +53,8 @@ def main() -> None:
             # Check if window should be closed
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 return
+
+        clock.tick(60)
 
         screen.fill("black")
 
