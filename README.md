@@ -1,4 +1,21 @@
-# Python Discord Code Jam Repository Template
+# The Game (working title)
+
+## Getting started
+
+Install the dependencies:
+```sh
+poetry install --no-dev
+```
+
+Start the server:
+```sh
+poetry run python the_game/server.py
+```
+
+Connect to the server:
+```sh
+poetry run python -m websockets "ws://localhost:8001"
+```
 
 ## Development Setup
 
