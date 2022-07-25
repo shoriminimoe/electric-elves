@@ -78,13 +78,15 @@ class Message(UserDict):
             >>> assert message == Message.deserialize(message.serialize())
         """
         LOG.info(f"Creating new Message from message: {message}")
-        message_dict = json.loads(message)
+        try:
+            message_dict = json.loads(message)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"malformed message - JSONDecodeError({exc})") from exc
+
         try:
             return cls(MessageType(message_dict["type"]), message_dict["content"])
         except KeyError as exc:
-            raise ValueError(
-                f"message must include 'type' and 'content' keys: {message}"
-            ) from exc
+            raise ValueError("message must include 'type' and 'content' keys") from exc
 
 
 def process_message(message: Message) -> str:
@@ -115,8 +117,12 @@ async def handler(websocket: WebSocketServerProtocol):
             try:
                 result = process_message(Message.deserialize(message))
             except ValueError as exc:
-                LOG.error(exc.args)
-                result = exc.args
+                LOG.error(
+                    "failed to process message due to exception: %s %s",
+                    f"message: {message}",
+                    f"exception: {exc}",
+                )
+                result = str(exc)
 
             # send the message to all connected clients
             websockets.broadcast(connected_clients, result)
