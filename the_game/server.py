@@ -113,7 +113,6 @@ async def handler(websocket: WebSocketServerProtocol):
         async for message in websocket:
             LOG.info("message from %s: %s", websocket.id, message)
 
-            # TODO handle game state updates
             try:
                 result = process_message(Message.deserialize(message))
             except ValueError as exc:
