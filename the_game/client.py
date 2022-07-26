@@ -4,12 +4,17 @@ import threading
 import pygame
 import websockets
 
+from messaging import Message, MessageType
 
+
+msg_queue = [] # list of messages to send to the server
 async def send(socket):
     """Sends data to the server"""
     while True:
-        msg = 'test'
-        await socket.send(msg)
+        if msg_queue: # checks if there is something in the list
+            msg = msg_queue[0]
+            msg_queue.remove(msg)
+            await socket.send(msg)
         await asyncio.sleep(0.1)
 
 
@@ -53,6 +58,9 @@ def main() -> None:
             # Check if window should be closed
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 return
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    msg_queue.append(Message(MessageType.MOVE, 'left click test').serialize())
 
         clock.tick(60)
 
