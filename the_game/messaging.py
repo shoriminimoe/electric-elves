@@ -1,8 +1,7 @@
-from enum import IntEnum, auto
-from collections import UserDict
-
-import logging
 import json
+import logging
+from collections import UserDict
+from enum import IntEnum, auto
 
 logging.basicConfig(
     level=logging.INFO,
@@ -10,6 +9,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 LOG = logging.getLogger(__name__)
+
 
 class MessageType(IntEnum):
     """MessageType enum
