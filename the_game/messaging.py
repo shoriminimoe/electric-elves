@@ -33,7 +33,7 @@ class Message(UserDict):
     websocket.
     """
 
-    def __init__(self, type: MessageType | int, content: str):
+    def __init__(self, type: MessageType | int, content: str, **kwargs):
         if isinstance(type, int):
             type = MessageType(type)
 
@@ -42,7 +42,7 @@ class Message(UserDict):
 
         LOG.debug(f"Message(type:{type}, content:{content}")
         self._type_value = type.value
-        super().__init__(type=type, content=content)
+        super().__init__(type=type, content=content, **kwargs)
 
     def serialize(self):
         """Return serialized string for message
