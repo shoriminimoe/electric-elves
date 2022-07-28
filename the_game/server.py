@@ -3,6 +3,7 @@ import asyncio
 import logging
 
 import websockets
+from messaging import Message, MessageType
 from websockets.exceptions import ConnectionClosedError
 from websockets.server import WebSocketServerProtocol
 

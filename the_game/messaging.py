@@ -1,8 +1,15 @@
+<<<<<<< HEAD
 from enum import IntEnum, auto
 from collections import UserDict
 
 import logging
 import json
+=======
+import json
+import logging
+from collections import UserDict
+from enum import IntEnum, auto
+>>>>>>> e2247dbe0a26beebf91e205ac76326d0f67975b7
 
 logging.basicConfig(
     level=logging.INFO,
@@ -11,6 +18,10 @@ logging.basicConfig(
 )
 LOG = logging.getLogger(__name__)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> e2247dbe0a26beebf91e205ac76326d0f67975b7
 class MessageType(IntEnum):
     """MessageType enum
 
@@ -80,4 +91,8 @@ class Message(UserDict):
         try:
             return cls(MessageType(message_dict["type"]), message_dict["content"])
         except KeyError as exc:
+<<<<<<< HEAD
             raise ValueError("message must include 'type' and 'content' keys") from exc
+=======
+            raise ValueError("message must include 'type' and 'content' keys") from exc
+>>>>>>> e2247dbe0a26beebf91e205ac76326d0f67975b7
