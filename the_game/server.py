@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from dataclasses import astuple
+from typing import Any
 
 import websockets
 from websockets.exceptions import ConnectionClosedError
@@ -17,23 +18,25 @@ logging.basicConfig(
 )
 LOG = logging.getLogger(__name__)
 
+connected_clients: set[WebSocketServerProtocol] = set()
 game = Game()
 
 
-def process_message(message: Message) -> str:
+async def process_message(message: Message) -> Any:
     """Process a client message
 
     This is where the server-side business logic lives.
     """
     match message["type"]:
+        case MessageType.QUIT:
+            for connection in connected_clients:
+                await connection.close()
+            game.reset()
         case MessageType.MOVE:
             # TODO: something meaningful with the message content
             return message["content"]
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
-
-
-connected_clients: set[WebSocketServerProtocol] = set()
 
 
 async def handler(websocket: WebSocketServerProtocol):

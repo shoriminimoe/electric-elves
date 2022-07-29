@@ -39,7 +39,7 @@ async def send(socket):
     while True:
         if msg_queue:  # checks if there is something in the list
             msg = msg_queue.pop(0)
-            await socket.send(msg)
+            await socket.send(msg.serialize())
         await asyncio.sleep(0.1)
 
 
@@ -103,7 +103,7 @@ def main() -> None:
     }
 
     messages = ["[SERVER] Test Message 1", "[SERVER] Test Message 2"]
-    message_window = pygame.Rect(500, 0, 300, 600)
+    message_window = pygame.Rect(MESSAGE_AREA)
 
     # Connect to the server!
     LOG.debug("connecting to server")
@@ -143,9 +143,7 @@ def main() -> None:
                 return
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    msg_queue.append(
-                        Message(MessageType.MOVE, "left click test").serialize()
-                    )
+                    msg_queue.append(Message(MessageType.MOVE, "left click test"))
 
         clock.tick(60)
 
@@ -163,4 +161,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        msg_queue.append(Message(MessageType.QUIT, ""))
