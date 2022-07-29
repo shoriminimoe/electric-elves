@@ -3,11 +3,11 @@ import asyncio
 import logging
 
 import websockets
-from messaging import Message, MessageType
 from websockets.exceptions import ConnectionClosedError
 from websockets.server import WebSocketServerProtocol
 
-from messaging import Message, MessageType
+from .game import Game
+from .messaging import Message, MessageType
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,6 +15,8 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 LOG = logging.getLogger(__name__)
+
+game = Game()
 
 
 def process_message(message: Message) -> str:
