@@ -112,8 +112,9 @@ def main() -> None:
     screen.fill("black")
     screen.blit(
         font.render("Waiting for server...", True, "lightgray"),
-        (SCREEN_SIZE[0] // 2, SCREEN_SIZE[1] // 2),
+        (SCREEN_SIZE[0] // 2 - 75, SCREEN_SIZE[1] // 2),
     )
+    pygame.display.update()
 
     # Wait at this point until the server is ready i.e. waiting for 2 clients
     # to connect
@@ -159,9 +160,9 @@ def main() -> None:
 
         # Draw Messages
         screen.fill((127, 127, 127), message_window)
-        screen.blit(font.render("Messages", True, "white"), (525, 25))
+        screen.blit(font.render("Messages", True, "white"), (825, 25))
         for i, message in enumerate(messages):
-            screen.blit(font.render(message, True, "lightgray"), (525, 60 + i * 25))
+            screen.blit(font.render(message, True, "lightgray"), (825, 60 + i * 25))
 
         pygame.draw.rect(screen, "red", game_objects["prey"])
         pygame.draw.rect(screen, "blue", game_objects["hunter"])
