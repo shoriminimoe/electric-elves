@@ -42,27 +42,27 @@ async def handler(websocket: WebSocketServerProtocol):
     """Client connection handler"""
     connected_clients.add(websocket)
 
-    while len(connected_clients) < 2:
-        LOG.info(
-            f"waiting for 2 clients to connect. connected: {len(connected_clients)}"
-        )
-        await asyncio.sleep(1)
-
-    if not game.initialized:
-        # initiate the game
-        game.initialize()
-        websockets.broadcast(
-            connected_clients,
-            Message(
-                MessageType.READY,
-                {
-                    "hunter": astuple(game.player1.position),
-                    "prey": astuple(game.player2.position),
-                },
-            ).serialize(),
-        )
-
     try:
+        while len(connected_clients) < 2:
+            LOG.info(
+                f"waiting for 2 clients to connect. connected: {len(connected_clients)}"
+            )
+            await asyncio.sleep(1)
+
+        if not game.initialized:
+            # initiate the game
+            game.initialize()
+            websockets.broadcast(
+                connected_clients,
+                Message(
+                    MessageType.READY,
+                    {
+                        "hunter": astuple(game.player1.position),
+                        "prey": astuple(game.player2.position),
+                    },
+                ).serialize(),
+            )
+
         async for message in websocket:
             LOG.info("message from %s: %s", websocket.id, message)
 
