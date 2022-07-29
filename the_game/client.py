@@ -1,6 +1,8 @@
 import asyncio
 import json
+import logging
 import threading
+from collections import deque
 
 import pygame
 import websockets
@@ -8,7 +10,11 @@ import websockets
 from .game import X_SPACES, Y_SPACES
 from .messaging import Message, MessageType
 
+logging.basicConfig(level=logging.DEBUG)
+LOG = logging.getLogger(__name__)
+
 msg_queue = []  # list of messages to send to the server
+inbound_messages = deque()
 
 SCREEN_SIZE = (1100, 600)
 GAME_AREA = (
@@ -32,8 +38,7 @@ async def send(socket):
     """Sends data to the server"""
     while True:
         if msg_queue:  # checks if there is something in the list
-            msg = msg_queue[0]
-            msg_queue.remove(msg)
+            msg = msg_queue.pop(0)
             await socket.send(msg)
         await asyncio.sleep(0.1)
 
@@ -41,12 +46,16 @@ async def send(socket):
 async def recv(socket):
     """Recieves data from the server"""
     while True:
-        print(await socket.recv())
+        message = await socket.recv()
+        LOG.debug(f"received message from server: {message}")
+        inbound_messages.append(message)
+        await asyncio.sleep(0.1)
 
 
 async def connect():
     """Joins the websocket server"""
     async with websockets.connect("ws://localhost:8001") as socket:
+        LOG.debug(f"connected to server as {socket.id}")
         await asyncio.gather(recv(socket), send(socket))
 
 
@@ -97,6 +106,7 @@ def main() -> None:
     message_window = pygame.Rect(500, 0, 300, 600)
 
     # Connect to the server!
+    LOG.debug("connecting to server")
     socket_thread = threading.Thread(target=asyncio.run, args=(connect(),))
     socket_thread.daemon = True
     socket_thread.start()
@@ -111,10 +121,13 @@ def main() -> None:
     # to connect
     server_ready = False
     while not server_ready:
-        for message in msg_queue:
-            msg = Message.deserialize(message)
-            if msg["type"] == MessageType.READY:
-                result = process_message(msg)
+        LOG.debug("waiting for other client")
+        if inbound_messages:
+            message = Message.deserialize(inbound_messages.popleft())
+            if message["type"] == MessageType.READY:
+                # Any other messages from the server are discarded at this
+                # point
+                result = process_message(message)
                 for thing, position in result.items():
                     game_objects[thing] = pygame.Rect(position, OBJECT_SIZE)
                 server_ready = True
