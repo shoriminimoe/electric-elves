@@ -3,13 +3,12 @@ import asyncio
 import json
 import logging
 from dataclasses import astuple
-from typing import Any
 
 import websockets
 from websockets.exceptions import ConnectionClosedError
 from websockets.server import WebSocketServerProtocol
 
-from .game import Game
+from .game import Direction, Game
 from .messaging import Message, MessageType
 
 logging.basicConfig(
@@ -23,7 +22,7 @@ connected_clients: set[WebSocketServerProtocol] = set()
 game = Game()
 
 
-def process_message(message: Message) -> Any:
+def process_message(message: Message) -> str:
     """Process a client message
 
     This is where the server-side business logic lives.
@@ -34,8 +33,14 @@ def process_message(message: Message) -> Any:
             game.reset()
             return "quit"
         case MessageType.MOVE:
-            # TODO: something meaningful with the message content
-            return message["content"]
+            LOG.info("received a MOVE message")
+            game.move_player(Direction(message["content"]))
+            return json.dumps(
+                {
+                    "hunter": astuple(game.player1.position),
+                    "prey": astuple(game.player2.position),
+                }
+            )
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
 
@@ -54,6 +59,7 @@ async def handler(websocket: WebSocketServerProtocol):
 
         if not game.initialized:
             # initiate the game
+            # TODO: make sure the player IDs are in the right order
             game.initialize()
             websockets.broadcast(
                 connected_clients,
@@ -85,8 +91,7 @@ async def handler(websocket: WebSocketServerProtocol):
                 response = Message(MessageType.ERROR, result)
 
             # send the message to all connected clients
-            await websocket.send(response.serialize())
-            websockets.broadcast(connected_clients, result)
+            websockets.broadcast(connected_clients, response.serialize())
 
     except ConnectionClosedError:
         LOG.info("client disconnected: %s", websocket.id)

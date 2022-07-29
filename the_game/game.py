@@ -2,6 +2,8 @@ import enum
 import random
 from dataclasses import dataclass
 
+import pygame
+
 # The number of spaces on the grid
 # Keep in mind that the grid is 0-indexed, so the only valid positions are:
 # 0 <= x < X_SPACES
@@ -13,10 +15,10 @@ Y_SPACES = 12
 class Direction(enum.Enum):
     """A movement direction"""
 
-    UP = "UP"
-    DOWN = "DOWN"
-    LEFT = "LEFT"
-    RIGHT = "RIGHT"
+    UP = pygame.K_UP
+    DOWN = pygame.K_DOWN
+    LEFT = pygame.K_LEFT
+    RIGHT = pygame.K_RIGHT
 
 
 @dataclass
@@ -73,6 +75,7 @@ class Game:
     def __init__(self):
         self.player1 = Player(Point(-1, -1))
         self.player2 = Player(Point(-1, -1))
+        self.objects = {}
         self.turns = 0
         self.initialized = False
 
@@ -87,8 +90,18 @@ class Game:
             y=random.choice(range(Y_SPACES)),
         )
         self.turns = 0
+        self.current_player = self.player1
         self.initialized = True
 
     def reset(self):
         """Reset the game"""
         self.initialized = False
+
+    def move_player(self, direction: Direction):
+        """Move an object in the given direction"""
+        self.current_player.move(direction)
+        if self.current_player == self.player1:
+            self.current_player = self.player2
+        else:
+            self.current_player = self.player1
+        self.turns += 1

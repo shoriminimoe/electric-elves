@@ -3,6 +3,7 @@ import json
 import logging
 import threading
 from collections import deque
+from time import sleep
 
 import pygame
 import websockets
@@ -74,14 +75,11 @@ def process_message(message: Message):
         to be converted to pixels based on the screen size.
     """
     match message["type"]:
-        case MessageType.READY:
-            initial_positions = json.loads(message["content"])
-            for thing, (x, y) in initial_positions.items():
-                initial_positions[thing] = convert_position(x, y)
-            return initial_positions
-        case MessageType.MOVE:
-            # TODO: something meaningful with the message content
-            return message["content"]
+        case MessageType.READY | MessageType.MOVE:
+            positions = json.loads(message["content"])
+            for thing, (x, y) in positions.items():
+                positions[thing] = convert_position(x, y)
+            return positions
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
 
@@ -141,9 +139,19 @@ def main() -> None:
             ):
                 msg_queue.append(Message(MessageType.QUIT, ""))
                 return
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    msg_queue.append(Message(MessageType.MOVE, "left click test"))
+            if event.type == pygame.KEYDOWN and event.key in (
+                pygame.K_UP,
+                pygame.K_DOWN,
+                pygame.K_RIGHT,
+                pygame.K_LEFT,
+            ):
+                msg_queue.append(Message(MessageType.MOVE, event.key))
+                # FIXME: wait for new positions. this is a bad way to do it.
+                sleep(0.1)
+                message = Message.deserialize(inbound_messages.popleft())
+                result = process_message(message)
+                for thing, position in result.items():
+                    game_objects[thing] = pygame.Rect(position, OBJECT_SIZE)
 
         clock.tick(60)
 
