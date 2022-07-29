@@ -71,15 +71,24 @@ class Game:
     """A game"""
 
     def __init__(self):
-        self.player1 = Player(
-            Point(
-                x=random.choice(range(X_SPACES // 4)),
-                y=random.choice(range(Y_SPACES)),
-            )
+        self.player1 = Player(Point(-1, -1))
+        self.player2 = Player(Point(-1, -1))
+        self.turns = 0
+        self.initialized = False
+
+    def initialize(self):
+        """Generate the map and set initial positions"""
+        self.player1.position = Point(
+            x=random.choice(range(X_SPACES // 4)),
+            y=random.choice(range(Y_SPACES)),
         )
-        self.player1 = Player(
-            Point(
-                x=random.choice(range(3 * X_SPACES // 4, X_SPACES)),
-                y=random.choice(range(Y_SPACES)),
-            )
+        self.player2.position = Point(
+            x=random.choice(range(3 * X_SPACES // 4, X_SPACES)),
+            y=random.choice(range(Y_SPACES)),
         )
+        self.turns = 0
+        self.initialized = True
+
+    def reset(self):
+        """Reset the game"""
+        self.initialize()

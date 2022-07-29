@@ -1,6 +1,7 @@
 """Server module"""
 import asyncio
 import logging
+from dataclasses import astuple
 
 import websockets
 from websockets.exceptions import ConnectionClosedError
@@ -39,12 +40,34 @@ async def handler(websocket: WebSocketServerProtocol):
     """Client connection handler"""
     connected_clients.add(websocket)
 
+    while len(connected_clients) < 2:
+        LOG.info(
+            f"waiting for 2 clients to connect. connected: {len(connected_clients)}"
+        )
+        await asyncio.sleep(1)
+
+    if not game.initialized:
+        # initiate the game
+        game.initialize()
+        websockets.broadcast(
+            connected_clients,
+            Message(
+                MessageType.READY,
+                {
+                    "hunter": astuple(game.player1.position),
+                    "prey": astuple(game.player2.position),
+                },
+            ).serialize(),
+        )
+
     try:
         async for message in websocket:
             LOG.info("message from %s: %s", websocket.id, message)
 
             try:
-                result = process_message(Message.deserialize(message))
+                msg = Message.deserialize(message)
+                result = process_message(msg)
+                response = Message(msg["type"], result)
             except ValueError as exc:
                 LOG.error(
                     "failed to process message due to exception: %s %s",
@@ -52,8 +75,10 @@ async def handler(websocket: WebSocketServerProtocol):
                     f"exception: {exc}",
                 )
                 result = str(exc)
+                response = Message(MessageType.ERROR, result)
 
             # send the message to all connected clients
+            await websocket.send(response.serialize())
             websockets.broadcast(connected_clients, result)
 
     except ConnectionClosedError:

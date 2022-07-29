@@ -1,4 +1,5 @@
 import asyncio
+import json
 import threading
 
 import pygame
@@ -31,6 +32,21 @@ async def connect():
         await asyncio.gather(recv(socket), send(socket))
 
 
+def process_message(message: Message):
+    """Process a server message
+
+    This is where the client handles messages from the server
+    """
+    match message["type"]:
+        case MessageType.READY:
+            return json.loads(message["content"])
+        case MessageType.MOVE:
+            # TODO: something meaningful with the message content
+            return message["content"]
+        case _:
+            raise ValueError(f"invalid message type: {message['type']}")
+
+
 def main() -> None:
     """Client entry point"""
     pygame.init()
@@ -54,12 +70,26 @@ def main() -> None:
     socket_thread.daemon = True
     socket_thread.start()
 
+    # Wait at this point until the server is ready i.e. waiting for 2 clients
+    # to connect
+    server_ready = False
+    while not server_ready:
+        for message in msg_queue:
+            msg = Message.deserialize(message)
+            if msg["type"] == MessageType.READY:
+                result = process_message(msg)
+                prey = pygame.Rect(result["prey"][0], result["prey"][1], 10, 10)
+                hunter = pygame.Rect(result["hunter"][0], result["hunter"][1], 10, 10)
+                server_ready = True
+                break
+
     while True:
         for event in pygame.event.get():
             # Check if window should be closed
             if event.type == pygame.QUIT or (
                 event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
             ):
+                msg_queue.append(Message(MessageType.QUIT, ""))
                 return
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
