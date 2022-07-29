@@ -8,7 +8,7 @@ from time import sleep
 import pygame
 import websockets
 
-from .game import X_SPACES, Y_SPACES
+from .game_elements import X_SPACES, Y_SPACES
 from .messaging import Message, MessageType
 
 logging.basicConfig(level=logging.DEBUG)

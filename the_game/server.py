@@ -8,7 +8,7 @@ import websockets
 from websockets.exceptions import ConnectionClosedError
 from websockets.server import WebSocketServerProtocol
 
-from .game import Direction, Game
+from .game_elements import Direction, Game
 from .messaging import Message, MessageType
 
 logging.basicConfig(
@@ -20,6 +20,18 @@ LOG = logging.getLogger(__name__)
 
 connected_clients: set[WebSocketServerProtocol] = set()
 game = Game()
+
+
+async def send(websocket, message):
+    try:
+        await websocket.send(message)
+    except websockets.ConnectionClosed:
+        pass
+
+
+def broadcast(message: str):
+    for websocket in connected_clients:
+        asyncio.create_task(send(websocket, message))
 
 
 def process_message(message: Message) -> str:
@@ -37,8 +49,8 @@ def process_message(message: Message) -> str:
             game.move_player(Direction(message["content"]))
             return json.dumps(
                 {
-                    "hunter": astuple(game.player1.position),
-                    "prey": astuple(game.player2.position),
+                    "hunter": (game.hunter.x, game.hunter.y),
+                    "prey": (game.prey.x, game.prey.y),
                 }
             )
         case _:
@@ -61,17 +73,16 @@ async def handler(websocket: WebSocketServerProtocol):
             # initiate the game
             # TODO: make sure the player IDs are in the right order
             game.initialize()
-            websockets.broadcast(
-                connected_clients,
+            broadcast(
                 Message(
                     MessageType.READY,
                     json.dumps(
                         {
-                            "hunter": astuple(game.player1.position),
-                            "prey": astuple(game.player2.position),
+                            "hunter": (game.hunter.x, game.hunter.y),
+                            "prey": (game.prey.x, game.prey.y),
                         }
                     ),
-                ).serialize(),
+                ).serialize()
             )
 
         async for message in websocket:
@@ -84,14 +95,14 @@ async def handler(websocket: WebSocketServerProtocol):
             except ValueError as exc:
                 LOG.error(
                     "failed to process message due to exception: %s %s",
-                    f"message: {message}",
+                    f"message: {message!s}",
                     f"exception: {exc}",
                 )
                 result = str(exc)
                 response = Message(MessageType.ERROR, result)
 
             # send the message to all connected clients
-            websockets.broadcast(connected_clients, response.serialize())
+            broadcast(response.serialize())
 
     except ConnectionClosedError:
         LOG.info("client disconnected: %s", websocket.id)
