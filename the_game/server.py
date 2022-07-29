@@ -87,10 +87,7 @@ async def handler(websocket: WebSocketServerProtocol):
         LOG.info("client disconnected: %s", websocket.id)
 
     finally:
-        for connection in connected_clients:
-            await connection.close()
-            connected_clients.remove(connection)
-        game.reset()
+        connected_clients.remove(websocket)
 
 
 async def main():
