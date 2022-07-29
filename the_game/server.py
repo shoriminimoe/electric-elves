@@ -22,15 +22,14 @@ connected_clients: set[WebSocketServerProtocol] = set()
 game = Game()
 
 
-async def process_message(message: Message) -> Any:
+def process_message(message: Message) -> Any:
     """Process a client message
 
     This is where the server-side business logic lives.
     """
     match message["type"]:
         case MessageType.QUIT:
-            for connection in connected_clients:
-                await connection.close()
+            LOG.info("received a QUIT message. resetting game")
             game.reset()
         case MessageType.MOVE:
             # TODO: something meaningful with the message content
@@ -85,11 +84,13 @@ async def handler(websocket: WebSocketServerProtocol):
             websockets.broadcast(connected_clients, result)
 
     except ConnectionClosedError:
-        # TODO handle the game state for disconnection errors
-        LOG.info("disconnection error for %s", websocket.id)
+        LOG.info("client disconnected: %s", websocket.id)
 
     finally:
-        connected_clients.remove(websocket)
+        for connection in connected_clients:
+            await connection.close()
+            connected_clients.remove(connection)
+        game.reset()
 
 
 async def main():

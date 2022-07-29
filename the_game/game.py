@@ -91,4 +91,4 @@ class Game:
 
     def reset(self):
         """Reset the game"""
-        self.initialize()
+        self.initialized = False
