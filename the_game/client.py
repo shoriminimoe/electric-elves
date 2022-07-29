@@ -5,9 +5,27 @@ import threading
 import pygame
 import websockets
 
+from .game import X_SPACES, Y_SPACES
 from .messaging import Message, MessageType
 
 msg_queue = []  # list of messages to send to the server
+
+SCREEN_SIZE = (1100, 600)
+GAME_AREA = (
+    0,
+    0,
+    800,
+    SCREEN_SIZE[1],
+)
+GRID_WIDTH = GAME_AREA[2] / X_SPACES
+GRID_HEIGHT = GAME_AREA[3] / Y_SPACES
+OBJECT_SIZE = (GRID_WIDTH * 0.8, GRID_HEIGHT * 0.8)
+MESSAGE_AREA = (
+    GAME_AREA[2],
+    0,
+    SCREEN_SIZE[0] - GAME_AREA[2],
+    SCREEN_SIZE[1],
+)
 
 
 async def send(socket):
@@ -32,14 +50,26 @@ async def connect():
         await asyncio.gather(recv(socket), send(socket))
 
 
+def convert_position(x: int, y: int) -> tuple[int, int]:
+    """Convert a grid indexed point to a pixel indexed point"""
+    return (x * GRID_WIDTH, y * GRID_HEIGHT)
+
+
 def process_message(message: Message):
     """Process a server message
 
     This is where the client handles messages from the server
+
+    Note:
+        Game object positions come through indexed by the game grid. These need
+        to be converted to pixels based on the screen size.
     """
     match message["type"]:
         case MessageType.READY:
-            return json.loads(message["content"])
+            initial_positions = json.loads(message["content"])
+            for thing, (x, y) in initial_positions.items():
+                initial_positions[thing] = convert_position(x, y)
+            return initial_positions
         case MessageType.MOVE:
             # TODO: something meaningful with the message content
             return message["content"]
@@ -52,15 +82,16 @@ def main() -> None:
     pygame.init()
     pygame.display.set_caption("Electric Elves Game")
 
-    screen_size = (800, 600)
-    screen = pygame.display.set_mode(screen_size)
+    screen = pygame.display.set_mode(SCREEN_SIZE)
 
     clock = pygame.time.Clock()
 
     font = pygame.font.SysFont(None, 24)
 
-    prey = pygame.Rect(300, 200, 10, 10)
-    hunter = pygame.Rect(100, 500, 40, 40)
+    game_objects = {
+        "prey": pygame.Rect((300, 200), OBJECT_SIZE),
+        "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
+    }
 
     messages = ["[SERVER] Test Message 1", "[SERVER] Test Message 2"]
     message_window = pygame.Rect(500, 0, 300, 600)
@@ -70,6 +101,12 @@ def main() -> None:
     socket_thread.daemon = True
     socket_thread.start()
 
+    screen.fill("black")
+    screen.blit(
+        font.render("Waiting for server...", True, "lightgray"),
+        (SCREEN_SIZE[0] // 2, SCREEN_SIZE[1] // 2),
+    )
+
     # Wait at this point until the server is ready i.e. waiting for 2 clients
     # to connect
     server_ready = False
@@ -78,8 +115,8 @@ def main() -> None:
             msg = Message.deserialize(message)
             if msg["type"] == MessageType.READY:
                 result = process_message(msg)
-                prey = pygame.Rect(result["prey"][0], result["prey"][1], 10, 10)
-                hunter = pygame.Rect(result["hunter"][0], result["hunter"][1], 10, 10)
+                for thing, position in result.items():
+                    game_objects[thing] = pygame.Rect(position, OBJECT_SIZE)
                 server_ready = True
                 break
 
@@ -107,8 +144,8 @@ def main() -> None:
         for i, message in enumerate(messages):
             screen.blit(font.render(message, True, "lightgray"), (525, 60 + i * 25))
 
-        pygame.draw.rect(screen, "red", prey)
-        pygame.draw.rect(screen, "blue", hunter)
+        pygame.draw.rect(screen, "red", game_objects["prey"])
+        pygame.draw.rect(screen, "blue", game_objects["hunter"])
         pygame.display.flip()
 
 
