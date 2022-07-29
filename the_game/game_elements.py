@@ -24,17 +24,22 @@ class Direction(Enum):
 
 
 class CellType(IntEnum):
+    """Enumeration for setting cell contents"""
+
     EMPTY = auto()
     WALL = auto()
 
 
 class Map:
+    """A game map"""
+
     def __init__(self, width: int, height: int):
         self.grid = np.full((width, height), CellType.EMPTY)
 
         # TODO: Construct a map
 
     def calc_distances(self, x, y):
+        """Calculate distances"""
         dist = np.full_like(self.grid, -1)
         dist[y][x] = 0
 
@@ -91,33 +96,32 @@ class Movable(Object):
             self.x = X_SPACES - 1
 
 
-@dataclass
-class Point:
-    """The ordered pair position of a game object"""
-
-    x: int
-    y: int
-
-
 class Obstacle(Object):
     """An obstacle"""
 
 
 class PlayerType(IntEnum):
+    """Enumeration for player types"""
+
     HUNTER = auto()
     PREY = auto()
 
 
 @dataclass
 class Player(Movable):
+    """A player"""
+
     def __init__(self, x, y, map: Map):
         super().__init__(x, y)
         self.map = map
-        self.distances = None  # used to store distances from a certain point to not have to repeatedly call the dist calc function when checking valid movements
+        # used to store distances from a certain point to not have to
+        # repeatedly call the dist calc function when checking valid movements
+        self.distances = None
         self.point_distances_calcd = [-1, -1]
 
     # mp = movement points
     def is_valid(self, x, y, nx, ny, mp):
+        """Return True if the movement is legal"""
         if self.distances is None or self.point_distances_calcd != (x, y):
             self.distances = self.map.calc_distances(x, y)
             self.point_distances_calcd = (x, y)
@@ -125,17 +129,22 @@ class Player(Movable):
         return self.distances[ny][nx] <= mp
 
     def update(self, nx, ny):
+        """Update the player position"""
         self.x, self.y = nx, ny
         self.distances = None
 
 
 class Hunter(Player):
+    """The hunter"""
+
     def __init__(self, x, y, map: Map):
         super().__init__(x, y, map)
         self.type = PlayerType.HUNTER
 
 
 class Prey(Player):
+    """The prey"""
+
     def __init__(self, x, y, map: Map):
         super().__init__(x, y, map)
         self.type = PlayerType.PREY

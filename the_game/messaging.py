@@ -11,6 +11,7 @@ logging.basicConfig(
 )
 LOG = logging.getLogger(__name__)
 
+
 class MessageType(IntEnum):
     """MessageType enum
 

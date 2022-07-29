@@ -2,10 +2,9 @@
 import asyncio
 import json
 import logging
-from dataclasses import astuple
 
 import websockets
-from websockets.exceptions import ConnectionClosedError
+from websockets.exceptions import ConnectionClosed
 from websockets.server import WebSocketServerProtocol
 
 from .game_elements import Direction, Game
@@ -22,14 +21,19 @@ connected_clients: set[WebSocketServerProtocol] = set()
 game = Game()
 
 
-async def send(websocket, message):
+async def send(websocket: WebSocketServerProtocol, message: str):
+    """Send a serialized message to websocket"""
     try:
         await websocket.send(message)
-    except websockets.ConnectionClosed:
+    except ConnectionClosed:
         pass
 
 
 def broadcast(message: str):
+    """Send a serialized message to all connected clients
+
+    See broadcasting example at https://websockets.readthedocs.io/en/stable/topics/broadcast.html#the-concurrent-way
+    """
     for websocket in connected_clients:
         asyncio.create_task(send(websocket, message))
 
@@ -104,7 +108,7 @@ async def handler(websocket: WebSocketServerProtocol):
             # send the message to all connected clients
             broadcast(response.serialize())
 
-    except ConnectionClosedError:
+    except ConnectionClosed:
         LOG.info("client disconnected: %s", websocket.id)
 
     finally:
