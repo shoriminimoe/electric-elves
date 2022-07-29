@@ -7,6 +7,8 @@ from messaging import Message, MessageType
 from websockets.exceptions import ConnectionClosedError
 from websockets.server import WebSocketServerProtocol
 
+from messaging import Message, MessageType
+
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] %(levelname)s %(message)s",
