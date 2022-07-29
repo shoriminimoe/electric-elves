@@ -2,6 +2,7 @@ import json
 import logging
 from collections import UserDict
 from enum import IntEnum, auto
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO,
@@ -9,6 +10,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 LOG = logging.getLogger(__name__)
+
 
 class MessageType(IntEnum):
     """MessageType enum
@@ -21,7 +23,13 @@ class MessageType(IntEnum):
            message type
     """
 
+    # Signals to the receiver that the sender is ready
+    READY = auto()
+    # Signals to the receiver that their last message failed
+    ERROR = auto()
     MOVE = auto()
+    # Signals to the receiver to quit
+    QUIT = auto()
 
 
 class Message(UserDict):
@@ -32,7 +40,7 @@ class Message(UserDict):
     websocket.
     """
 
-    def __init__(self, type: MessageType | int, content: str, **kwargs):
+    def __init__(self, type: MessageType | int, content: Any, **kwargs):
         if isinstance(type, int):
             type = MessageType(type)
 

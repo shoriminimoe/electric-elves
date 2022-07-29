@@ -1,13 +1,14 @@
 """Server module"""
 import asyncio
+import json
 import logging
 
 import websockets
-from messaging import Message, MessageType
-from websockets.exceptions import ConnectionClosedError
+from websockets.exceptions import ConnectionClosed
 from websockets.server import WebSocketServerProtocol
 
-from messaging import Message, MessageType
+from .game_elements import Direction, Game
+from .messaging import Message, MessageType
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,6 +17,26 @@ logging.basicConfig(
 )
 LOG = logging.getLogger(__name__)
 
+connected_clients: set[WebSocketServerProtocol] = set()
+game = Game()
+
+
+async def send(websocket: WebSocketServerProtocol, message: str):
+    """Send a serialized message to websocket"""
+    try:
+        await websocket.send(message)
+    except ConnectionClosed:
+        pass
+
+
+def broadcast(message: str):
+    """Send a serialized message to all connected clients
+
+    See broadcasting example at https://websockets.readthedocs.io/en/stable/topics/broadcast.html#the-concurrent-way
+    """
+    for websocket in connected_clients:
+        asyncio.create_task(send(websocket, message))
+
 
 def process_message(message: Message) -> str:
     """Process a client message
@@ -23,40 +44,72 @@ def process_message(message: Message) -> str:
     This is where the server-side business logic lives.
     """
     match message["type"]:
+        case MessageType.QUIT:
+            LOG.info("received a QUIT message. resetting game")
+            game.reset()
+            return "quit"
         case MessageType.MOVE:
-            # TODO: something meaningful with the message content
-            return message["content"]
+            LOG.info("received a MOVE message")
+            game.move_player(Direction(message["content"]))
+            return json.dumps(
+                {
+                    "hunter": (game.hunter.x, game.hunter.y),
+                    "prey": (game.prey.x, game.prey.y),
+                }
+            )
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
-
-
-connected_clients: set[WebSocketServerProtocol] = set()
 
 
 async def handler(websocket: WebSocketServerProtocol):
     """Client connection handler"""
     connected_clients.add(websocket)
+    LOG.info("client connected: %s", websocket.id)
 
     try:
+        while len(connected_clients) < 2:
+            LOG.info(
+                f"waiting for 2 clients to connect. connected: {len(connected_clients)}"
+            )
+            await asyncio.sleep(1)
+
+        if not game.initialized:
+            # initiate the game
+            # TODO: make sure the player IDs are in the right order
+            game.initialize()
+            broadcast(
+                Message(
+                    MessageType.READY,
+                    json.dumps(
+                        {
+                            "hunter": (game.hunter.x, game.hunter.y),
+                            "prey": (game.prey.x, game.prey.y),
+                        }
+                    ),
+                ).serialize()
+            )
+
         async for message in websocket:
             LOG.info("message from %s: %s", websocket.id, message)
 
             try:
-                result = process_message(Message.deserialize(message))
+                msg = Message.deserialize(message)
+                result = process_message(msg)
+                response = Message(msg["type"], result)
             except ValueError as exc:
                 LOG.error(
                     "failed to process message due to exception: %s %s",
-                    f"message: {message}",
+                    f"message: {message!s}",
                     f"exception: {exc}",
                 )
                 result = str(exc)
+                response = Message(MessageType.ERROR, result)
 
             # send the message to all connected clients
-            websockets.broadcast(connected_clients, result)
+            broadcast(response.serialize())
 
-    except ConnectionClosedError:
-        # TODO handle the game state for disconnection errors
-        LOG.info("disconnection error for %s", websocket.id)
+    except ConnectionClosed:
+        LOG.info("client disconnected: %s", websocket.id)
 
     finally:
         connected_clients.remove(websocket)

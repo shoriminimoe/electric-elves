@@ -3,16 +3,19 @@
 ## Getting started
 
 Install the dependencies:
+
 ```sh
 poetry install --no-dev
 ```
 
 Start the server:
+
 ```sh
 poetry run python the_game/server.py
 ```
 
 Now in a separate terminal, launch the client:
+
 ```sh
 poetry run python the_game/client.py
 ```
@@ -34,11 +37,13 @@ poetry run python -m websockets "ws://localhost:8001"
 ```
 
 Now send a message:
+
 ```sh
 Connected to ws://localhost:8001.
 > {"type": 1, "content": "bwah"}
 < bwah
-> 
+>
+
 ```
 
 > :information_source: Note
@@ -46,6 +51,7 @@ Connected to ws://localhost:8001.
 > The types of available messages are defined in the `messaging.MessageType` enum. When the enum is serialized, its integer value is used. Keep that in mind when communicating with the server this way.
 
 This is what the server reports:
+
 ```sh
 [2022-07-26 09:53:44] INFO server listening on [::]:8001
 [2022-07-26 09:53:44] INFO server listening on 0.0.0.0:8001
