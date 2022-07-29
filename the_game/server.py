@@ -1,5 +1,6 @@
 """Server module"""
 import asyncio
+import json
 import logging
 from dataclasses import astuple
 from typing import Any
@@ -31,6 +32,7 @@ def process_message(message: Message) -> Any:
         case MessageType.QUIT:
             LOG.info("received a QUIT message. resetting game")
             game.reset()
+            return "quit"
         case MessageType.MOVE:
             # TODO: something meaningful with the message content
             return message["content"]
@@ -41,6 +43,7 @@ def process_message(message: Message) -> Any:
 async def handler(websocket: WebSocketServerProtocol):
     """Client connection handler"""
     connected_clients.add(websocket)
+    LOG.info("client connected: %s", websocket.id)
 
     try:
         while len(connected_clients) < 2:
@@ -56,10 +59,12 @@ async def handler(websocket: WebSocketServerProtocol):
                 connected_clients,
                 Message(
                     MessageType.READY,
-                    {
-                        "hunter": astuple(game.player1.position),
-                        "prey": astuple(game.player2.position),
-                    },
+                    json.dumps(
+                        {
+                            "hunter": astuple(game.player1.position),
+                            "prey": astuple(game.player2.position),
+                        }
+                    ),
                 ).serialize(),
             )
 
