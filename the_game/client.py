@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
 
 msg_queue = []  # list of messages to send to the server
-inbound_messages = deque()
+msgs_received = deque()
 
 SCREEN_SIZE = (1100, 600)
 GAME_AREA = (
@@ -49,7 +49,10 @@ async def recv(socket):
     while True:
         message = await socket.recv()
         LOG.debug(f"received message from server: {message}")
-        inbound_messages.append(message)
+        try:
+            process_message(Message.deserialize(message))
+        except ValueError:
+            LOG.warning("received invalid message: '%s'", message)
         await asyncio.sleep(0.1)
 
 
@@ -65,6 +68,12 @@ def convert_position(x: int, y: int) -> tuple[int, int]:
     return (x * GRID_WIDTH, y * GRID_HEIGHT)
 
 
+game_objects: dict[(str, pygame.Rect)] = {
+    "prey": pygame.Rect((300, 200), OBJECT_SIZE),
+    "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
+}
+
+
 def process_message(message: Message):
     """Process a server message
 
@@ -78,16 +87,9 @@ def process_message(message: Message):
         case MessageType.READY | MessageType.MOVE:
             positions = json.loads(message["content"])
             for thing, (x, y) in positions.items():
-                positions[thing] = convert_position(x, y)
-            return positions
+                game_objects[thing] = pygame.Rect(convert_position(x, y), OBJECT_SIZE)
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
-
-
-game_objects: dict[str, pygame.Rect] = {
-    "prey": pygame.Rect((300, 200), OBJECT_SIZE),
-    "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
-}
 
 
 def main() -> None:
@@ -128,16 +130,7 @@ def main() -> None:
                 msg_queue.append(Message(MessageType.QUIT, ""))
                 return
         LOG.debug("waiting for other client")
-        if inbound_messages:
-            message = Message.deserialize(inbound_messages.popleft())
-            if message["type"] == MessageType.READY:
-                # Any other messages from the server are discarded at this
-                # point
-                result = process_message(message)
-                for thing, position in result.items():
-                    game_objects[thing] = pygame.Rect(position, OBJECT_SIZE)
-                server_ready = True
-                break
+        sleep(0.1)
 
     while True:
         for event in pygame.event.get():
@@ -154,12 +147,7 @@ def main() -> None:
                 pygame.K_LEFT,
             ):
                 msg_queue.append(Message(MessageType.MOVE, event.key))
-                # FIXME: wait for new positions. this is a bad way to do it.
                 sleep(0.1)
-                message = Message.deserialize(inbound_messages.popleft())
-                result = process_message(message)
-                for thing, position in result.items():
-                    game_objects[thing] = pygame.Rect(position, OBJECT_SIZE)
 
         clock.tick(60)
 
