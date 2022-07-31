@@ -66,7 +66,7 @@ class ObjectType(IntEnum):
     HUNTER = auto()
     PREY = auto()
     STONE = auto()
-    TREE = ()
+    TREE = auto()
 
 
 @dataclass
@@ -83,29 +83,48 @@ class Object:
 class Movable(Object):
     """A movable object"""
 
-    def move(self, direction: Direction):
+    def move(self, direction: Direction, map: Map, amount=1):
         """Move object one space in `direction`"""
+
+        nx, ny = self.x, self.y
+
         match direction:
             case Direction.UP:
-                self.y -= 1
+                ny -= amount
             case Direction.DOWN:
-                self.y += 1
+                ny += amount
             case Direction.LEFT:
-                self.x -= 1
+                nx -= amount
             case Direction.RIGHT:
-                self.x += 1
+                nx += amount
 
-        # TODO: Add obstacle check?
+        # wall collision detection
+
+        dx = np.sign(nx - self.x)
+        if dx != 0:
+            for x in range(self.x + dx, nx + dx, dx):
+                if map.grid[self.y][x] == CellType.WALL:
+                    nx = x - dx
+                    break
+
+        dy = np.sign(ny - self.y)
+        if dy != 0:
+            for y in range(self.y + dy, ny + dy, dy):
+                if map.grid[y][self.x] == CellType.WALL:
+                    ny = y - dy
+                    break
 
         # bounds check
-        if self.y < 0:
-            self.y = 0
-        if self.y >= Y_SPACES:
-            self.y = Y_SPACES - 1
-        if self.x < 0:
-            self.x = 0
-        if self.x >= X_SPACES:
-            self.x = X_SPACES - 1
+        if ny < 0:
+            ny = 0
+        if ny >= Y_SPACES:
+            ny = Y_SPACES - 1
+        if nx < 0:
+            nx = 0
+        if nx >= X_SPACES:
+            nx = X_SPACES - 1
+
+        self.x, self.y = nx, ny
 
 
 @dataclass
@@ -165,10 +184,17 @@ class Game:
         else:
             self.players.append(Player(player_id, ObjectType.PREY, -1, -1, self.map))
 
+    def deinit_player(self, player_id: UUID):
+        """Remove a player from the game"""
+        for player in self.players:
+            if player.id == player_id:
+                self.players.remove(player)
+                break
+
     def move_player(self, player_id: UUID, direction: Direction):
         """Move a player in the given direction"""
         current_player_idx = self.turns % 2
         if self.players[current_player_idx].id != player_id:
             raise RuntimeError("not your turn")
-        self.players[current_player_idx].move(direction)
+        self.players[current_player_idx].move(direction, self.map)
         self.turns += 1
