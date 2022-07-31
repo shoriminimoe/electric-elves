@@ -14,8 +14,9 @@ from messaging import Message, MessageType
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
 
-msg_queue = []  # list of messages to send to the server
-msgs_received = deque()
+msg_queue: list = []  # list of messages to send to the server
+msgs_received: deque = deque()
+print_items: deque = deque(maxlen=20)
 
 SCREEN_SIZE = (1100, 600)
 GAME_AREA = (
@@ -96,6 +97,8 @@ def process_message(message: Message):
                         pygame.Rect(convert_position(x, y), OBJECT_SIZE)
                     )
             server_ready = True
+        case MessageType.ERROR:
+            print_items.append(message["content"])
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
 
@@ -111,7 +114,6 @@ def main() -> None:
 
     font = pygame.font.SysFont(None, 24)
 
-    messages = ["[SERVER] Test Message 1", "[SERVER] Test Message 2"]
     message_window = pygame.Rect(MESSAGE_AREA)
 
     # Connect to the server!
@@ -140,6 +142,11 @@ def main() -> None:
         LOG.debug("waiting for other client")
         sleep(0.1)
 
+    # Draw Messages
+    screen.fill("black")
+    screen.fill((127, 127, 127), message_window)
+    screen.blit(font.render("Messages", True, "white"), (825, 25))
+
     while True:
         for event in pygame.event.get():
             # Check if window should be closed
@@ -159,12 +166,7 @@ def main() -> None:
 
         clock.tick(60)
 
-        screen.fill("black")
-
-        # Draw Messages
-        screen.fill((127, 127, 127), message_window)
-        screen.blit(font.render("Messages", True, "white"), (825, 25))
-        for i, message in enumerate(messages):
+        for i, message in enumerate(print_items):
             screen.blit(font.render(message, True, "lightgray"), (825, 60 + i * 25))
 
         for stone in game_objects["stone"]:
