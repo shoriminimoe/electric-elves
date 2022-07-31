@@ -68,6 +68,7 @@ def convert_position(x: int, y: int) -> tuple[int, int]:
     return (x * GRID_WIDTH, y * GRID_HEIGHT)
 
 
+server_ready = False
 game_objects: dict[(str, pygame.Rect)] = {
     "prey": pygame.Rect((300, 200), OBJECT_SIZE),
     "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
@@ -83,11 +84,13 @@ def process_message(message: Message):
         Game object positions come through indexed by the game grid. These need
         to be converted to pixels based on the screen size.
     """
+    global server_ready
     match message["type"]:
         case MessageType.READY | MessageType.MOVE:
             positions = json.loads(message["content"])
             for thing, (x, y) in positions.items():
                 game_objects[thing] = pygame.Rect(convert_position(x, y), OBJECT_SIZE)
+            server_ready = True
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
 
@@ -113,16 +116,16 @@ def main() -> None:
     socket_thread.start()
 
     screen.fill("black")
+    screen.blit(
+        font.render("Waiting for game to start...", True, "lightgray"),
+        (SCREEN_SIZE[0] // 2 - 75, SCREEN_SIZE[1] // 2),
+    )
+    pygame.display.update()
 
     # Wait at this point until the server is ready i.e. waiting for 2 clients
-    # to connect
-    server_ready = False
+    # to connect. `server_ready` is set to True once the READY message has been
+    # received and processed.
     while not server_ready:
-        screen.blit(
-            font.render("Waiting for game to start...", True, "lightgray"),
-            (SCREEN_SIZE[0] // 2 - 75, SCREEN_SIZE[1] // 2),
-        )
-        pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (
                 event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
