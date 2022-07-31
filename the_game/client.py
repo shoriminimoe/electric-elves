@@ -8,8 +8,8 @@ from time import sleep
 import pygame
 import websockets
 
-from .game_elements import X_SPACES, Y_SPACES
-from .messaging import Message, MessageType
+from game_elements import X_SPACES, Y_SPACES
+from messaging import Message, MessageType
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ def process_message(message: Message):
         to be converted to pixels based on the screen size.
     """
     global server_ready
-    match message["type"]:
+    match message['type']:
         case MessageType.READY | MessageType.MOVE:
             positions = json.loads(message["content"])
             for thing, (x, y) in positions.items():

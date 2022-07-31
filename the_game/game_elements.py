@@ -165,6 +165,13 @@ class Game:
         else:
             self.players.append(Player(player_id, ObjectType.PREY, -1, -1, self.map))
 
+    def deinit_player(self, player_id: UUID):
+        """Remove a player from the game"""
+        for player in self.players:
+            if player.id == player_id:
+                self.players.remove(player)
+                break
+
     def move_player(self, player_id: UUID, direction: Direction):
         """Move a player in the given direction"""
         current_player_idx = self.turns % 2

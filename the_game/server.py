@@ -8,8 +8,8 @@ import websockets
 from websockets.exceptions import ConnectionClosed
 from websockets.server import WebSocketServerProtocol
 
-from .game_elements import Direction, Game
-from .messaging import Message, MessageType
+from game_elements import Direction, Game
+from messaging import Message, MessageType
 
 logging.basicConfig(
     level=logging.INFO,
@@ -93,6 +93,8 @@ async def handler(websocket: WebSocketServerProtocol):
 
             await asyncio.sleep(1)
 
+        LOG.info("Both clients connected! ")
+
         if not game.initialized:
             # initiate the game
             # TODO: make sure the player IDs are in the right order
@@ -137,6 +139,7 @@ async def handler(websocket: WebSocketServerProtocol):
 
     finally:
         connected_clients.remove(websocket)
+        game.deinit_player(websocket.id)
 
 
 async def main():
