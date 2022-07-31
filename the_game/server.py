@@ -90,7 +90,7 @@ async def handler(websocket: WebSocketServerProtocol):
             )
             # make sure user client hasn't disconnected
             await websocket.ping()
-
+            
             await asyncio.sleep(1)
 
         LOG.info("Both clients connected! ")
