@@ -2,6 +2,7 @@ import random
 from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 from queue import Queue
+from uuid import UUID
 
 import numpy as np
 import pygame
@@ -155,31 +156,47 @@ class Game:
 
     def __init__(self):
         self.map = Map(X_SPACES, Y_SPACES)
-        self.hunter = Hunter(-1, -1, self.map)
-        self.prey = Prey(-1, -1, self.map)
+        self.player_ids = []
+        self.players = {}
         self.objects = {}
         self.turns = 0
         self.initialized = False
 
     def initialize(self):
         """Generate the map and set initial positions"""
-        self.hunter.x = random.choice(range(X_SPACES // 4))
-        self.hunter.y = random.choice(range(Y_SPACES))
-        self.prey.x = random.choice(range(3 * X_SPACES // 4, X_SPACES))
-        self.prey.y = random.choice(range(Y_SPACES))
+        self.players[self.player_ids[0]] = Hunter(
+            random.choice(range(X_SPACES // 4)),
+            random.choice(range(Y_SPACES)),
+            self.map,
+        )
+        self.players[self.player_ids[1]] = Prey(
+            random.choice(range(X_SPACES // 4, X_SPACES)),
+            random.choice(range(Y_SPACES)),
+            self.map,
+        )
         self.turns = 0
-        self.current_player = self.hunter
         self.initialized = True
 
     def reset(self):
         """Reset the game"""
+        self.player_ids = []
+        self.players = {}
         self.initialized = False
 
-    def move_player(self, direction: Direction):
-        """Move an object in the given direction"""
-        self.current_player.move(direction)
-        if self.current_player == self.hunter:
-            self.current_player = self.prey
+    def init_player(self, player_id: UUID):
+        """Add a player to the game"""
+        if len(self.player_ids) >= 2:
+            raise RuntimeError("maximum players are added")
+        if len(self.player_ids) == 0:
+            self.players[player_id] = Hunter(-1, -1, self.map)
         else:
-            self.current_player = self.hunter
+            self.players[player_id] = Prey(-1, -1, self.map)
+        self.player_ids.append(player_id)
+
+    def move_player(self, player_id: UUID, direction: Direction):
+        """Move a player in the given direction"""
+        current_player_id = self.player_ids[self.turns % 2]
+        if current_player_id != player_id:
+            raise RuntimeError("not your turn")
+        self.players[current_player_id].move(direction)
         self.turns += 1

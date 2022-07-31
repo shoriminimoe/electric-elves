@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+from uuid import UUID
 
 import websockets
 from websockets.exceptions import ConnectionClosed
@@ -38,7 +39,7 @@ def broadcast(message: str):
         asyncio.create_task(send(websocket, message))
 
 
-def process_message(message: Message) -> str:
+def process_message(message: Message, sender: UUID) -> Message:
     """Process a client message
 
     This is where the server-side business logic lives.
@@ -47,15 +48,27 @@ def process_message(message: Message) -> str:
         case MessageType.QUIT:
             LOG.info("received a QUIT message. resetting game")
             game.reset()
-            return "quit"
+            return Message(MessageType.QUIT, "quit")
         case MessageType.MOVE:
             LOG.info("received a MOVE message")
-            game.move_player(Direction(message["content"]))
-            return json.dumps(
-                {
-                    "hunter": (game.hunter.x, game.hunter.y),
-                    "prey": (game.prey.x, game.prey.y),
-                }
+            try:
+                game.move_player(sender, Direction(message["content"]))
+            except RuntimeError as exc:
+                return Message(MessageType.ERROR, f"{exc}")
+            return Message(
+                MessageType.MOVE,
+                json.dumps(
+                    {
+                        "hunter": (
+                            game.players[game.player_ids[0]].x,
+                            game.players[game.player_ids[0]].y,
+                        ),
+                        "prey": (
+                            game.players[game.player_ids[1]].x,
+                            game.players[game.player_ids[1]].y,
+                        ),
+                    }
+                ),
             )
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
@@ -63,8 +76,12 @@ def process_message(message: Message) -> str:
 
 async def handler(websocket: WebSocketServerProtocol):
     """Client connection handler"""
-    connected_clients.add(websocket)
     LOG.info("client connected: %s", websocket.id)
+    try:
+        game.init_player(websocket.id)
+    except RuntimeError as exc:
+        await websocket.close(reason=f"{exc}")
+    connected_clients.add(websocket)
 
     try:
         while len(connected_clients) < 2:
@@ -82,8 +99,14 @@ async def handler(websocket: WebSocketServerProtocol):
                     MessageType.READY,
                     json.dumps(
                         {
-                            "hunter": (game.hunter.x, game.hunter.y),
-                            "prey": (game.prey.x, game.prey.y),
+                            "hunter": (
+                                game.players[game.player_ids[0]].x,
+                                game.players[game.player_ids[0]].y,
+                            ),
+                            "prey": (
+                                game.players[game.player_ids[1]].x,
+                                game.players[game.player_ids[1]].y,
+                            ),
                         }
                     ),
                 ).serialize()
@@ -94,16 +117,14 @@ async def handler(websocket: WebSocketServerProtocol):
 
             try:
                 msg = Message.deserialize(message)
-                result = process_message(msg)
-                response = Message(msg["type"], result)
+                response = process_message(msg, websocket.id)
             except ValueError as exc:
                 LOG.error(
                     "failed to process message due to exception: %s %s",
                     f"message: {message!s}",
                     f"exception: {exc}",
                 )
-                result = str(exc)
-                response = Message(MessageType.ERROR, result)
+                response = Message(MessageType.ERROR, str(exc))
 
             # send the message to all connected clients
             broadcast(response.serialize())

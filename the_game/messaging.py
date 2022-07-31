@@ -4,6 +4,8 @@ from collections import UserDict
 from enum import IntEnum, auto
 from typing import Any
 
+from websockets.typing import Data
+
 logging.basicConfig(
     level=logging.DEBUG,
     format="[%(asctime)s] %(levelname)s %(message)s",
@@ -63,7 +65,7 @@ class Message(UserDict):
         return json.dumps(self.data)
 
     @classmethod
-    def deserialize(cls, message: str):
+    def deserialize(cls, message: Data | str):
         """Construct a Message from a serialized Message
 
         Use this method to construct a Message object from a serialized message
@@ -77,7 +79,7 @@ class Message(UserDict):
             >>> message = Message(type=MessageType.MOVE, content="up")
             >>> assert message == Message.deserialize(message.serialize())
         """
-        LOG.debug(f"deserializing: '{message}'")
+        LOG.debug(f"deserializing: '{message!s}'")
         try:
             message_dict = json.loads(message)
         except json.JSONDecodeError as exc:
