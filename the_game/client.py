@@ -147,6 +147,12 @@ def main() -> None:
     screen.fill((127, 127, 127), message_window)
     screen.blit(font.render("Messages", True, "white"), (825, 25))
 
+    for stone in game_objects["stone"]:
+        pygame.draw.rect(screen, "grey", stone)
+
+    for tree in game_objects["tree"]:
+        pygame.draw.rect(screen, "green", tree)
+
     while True:
         for event in pygame.event.get():
             # Check if window should be closed
@@ -168,11 +174,6 @@ def main() -> None:
 
         for i, message in enumerate(print_items):
             screen.blit(font.render(message, True, "lightgray"), (825, 60 + i * 25))
-
-        for stone in game_objects["stone"]:
-            pygame.draw.rect(screen, "grey", stone)
-        for tree in game_objects["tree"]:
-            pygame.draw.rect(screen, "green", tree)
 
         pygame.draw.rect(screen, "red", game_objects["prey"][0])
         pygame.draw.rect(screen, "blue", game_objects["hunter"][0])
