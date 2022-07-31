@@ -8,8 +8,8 @@ import websockets
 from websockets.exceptions import ConnectionClosed
 from websockets.server import WebSocketServerProtocol
 
-from .game_elements import Direction, Game
-from .messaging import Message, MessageType
+from game_elements import Direction, Game
+from messaging import Message, MessageType
 
 logging.basicConfig(
     level=logging.INFO,
@@ -88,6 +88,9 @@ async def handler(websocket: WebSocketServerProtocol):
             LOG.info(
                 f"waiting for 2 clients to connect. connected: {len(connected_clients)}"
             )
+            # attempt to ping supposedly connected player to make sure they haven't disconnected
+            await websocket.ping()
+                    
             await asyncio.sleep(1)
 
         if not game.initialized:
