@@ -1,8 +1,9 @@
 import random
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum, auto
+from itertools import product
 from queue import Queue
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import numpy as np
 import pygame
@@ -28,7 +29,8 @@ class CellType(IntEnum):
     """Enumeration for setting cell contents"""
 
     EMPTY = auto()
-    WALL = auto()
+    STONE = auto()
+    TREE = auto()
 
 
 class Map:
@@ -85,7 +87,6 @@ class Movable(Object):
 
     def move(self, direction: Direction, map: Map, amount=1):
         """Move object one space in `direction`"""
-
         nx, ny = self.x, self.y
 
         match direction:
@@ -100,19 +101,19 @@ class Movable(Object):
 
         # wall collision detection
 
-        dx = np.sign(nx - self.x)
-        if dx != 0:
-            for x in range(self.x + dx, nx + dx, dx):
-                if map.grid[self.y][x] == CellType.WALL:
-                    nx = x - dx
-                    break
-
-        dy = np.sign(ny - self.y)
-        if dy != 0:
-            for y in range(self.y + dy, ny + dy, dy):
-                if map.grid[y][self.x] == CellType.WALL:
-                    ny = y - dy
-                    break
+        # dx = np.sign(nx - self.x)
+        # if dx != 0:
+        #     for x in range(self.x + dx, nx + dx, dx):
+        #         if map.grid[self.y][x] == CellType.WALL:
+        #             nx = x - dx
+        #             break
+        #
+        # dy = np.sign(ny - self.y)
+        # if dy != 0:
+        #     for y in range(self.y + dy, ny + dy, dy):
+        #         if map.grid[y][self.x] == CellType.WALL:
+        #             ny = y - dy
+        #             break
 
         # bounds check
         if ny < 0:
@@ -168,6 +169,24 @@ class Game:
         self.players[0].y = random.choice(range(Y_SPACES))
         self.players[1].x = random.choice(range(3 * X_SPACES // 4, X_SPACES))
         self.players[1].y = random.choice(range(Y_SPACES))
+
+        # create list of spaces available on the grid
+        available_spaces = list(product(range(X_SPACES), range(Y_SPACES)))
+        available_spaces.remove((self.players[0].x, self.players[0].y))
+        available_spaces.remove((self.players[1].x, self.players[1].y))
+
+        # add stones
+        for _ in range(4):
+            position = random.choice(available_spaces)
+            self.objects.append(Object(uuid4(), ObjectType.STONE, *position))
+            available_spaces.remove(position)
+
+        # add trees
+        for _ in range(4):
+            position = random.choice(available_spaces)
+            self.objects.append(Object(uuid4(), ObjectType.TREE, *position))
+            available_spaces.remove(position)
+
         self.turns = 0
         self.initialized = True
 

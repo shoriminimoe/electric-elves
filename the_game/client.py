@@ -3,19 +3,23 @@ import json
 import logging
 import threading
 from collections import deque
+from pathlib import Path
 from time import sleep
 
+import numpy as np
 import pygame
 import websockets
 
-from game_elements import X_SPACES, Y_SPACES
-from messaging import Message, MessageType
+from .game_elements import X_SPACES, Y_SPACES
+from .messaging import Message, MessageType
+from .tiles import Tilemap, Tileset
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
 
-msg_queue = []  # list of messages to send to the server
-msgs_received = deque()
+msg_queue: list = []  # list of messages to send to the server
+msgs_received: deque = deque()
+print_items: deque = deque(maxlen=20)
 
 SCREEN_SIZE = (1100, 600)
 GAME_AREA = (
@@ -26,6 +30,8 @@ GAME_AREA = (
 )
 GRID_WIDTH = GAME_AREA[2] // X_SPACES
 GRID_HEIGHT = GAME_AREA[3] // Y_SPACES
+# The tileset is 16x16
+SCALE = GRID_WIDTH / 16
 OBJECT_SIZE = (GRID_WIDTH * 0.8, GRID_HEIGHT * 0.8)
 MESSAGE_AREA = (
     GAME_AREA[2],
@@ -33,6 +39,14 @@ MESSAGE_AREA = (
     SCREEN_SIZE[0] - GAME_AREA[2],
     SCREEN_SIZE[1],
 )
+tileset = Tileset(
+    Path(Path(__file__).parent, "static", "tileset.png"),
+    size=(GRID_WIDTH, GRID_HEIGHT),
+    margin=0,
+    spacing=0,
+    offset=(-1, 0),
+)
+tilemap = Tilemap(tileset, (Y_SPACES, X_SPACES), GRID_WIDTH)
 
 
 async def send(socket):
@@ -69,9 +83,11 @@ def convert_position(x: int, y: int) -> tuple[int, int]:
 
 
 server_ready = False
-game_objects: dict[(str, pygame.Rect)] = {
-    "prey": pygame.Rect((300, 200), OBJECT_SIZE),
-    "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
+game_objects: dict[(str, list[pygame.Rect])] = {
+    "prey": [],
+    "hunter": [],
+    "stone": [],
+    "tree": [],
 }
 
 
@@ -85,12 +101,26 @@ def process_message(message: Message):
         to be converted to pixels based on the screen size.
     """
     global server_ready
-    match message['type']:
-        case MessageType.READY | MessageType.MOVE:
+    match message["type"]:
+        case MessageType.READY:
             positions = json.loads(message["content"])
-            for thing, (x, y) in positions.items():
-                game_objects[thing] = pygame.Rect(convert_position(x, y), OBJECT_SIZE)
+            # TODO: set the tilemap `map` attribute here then call
+            # tilemap.render() below
+            for thing, value in positions.items():
+                for (x, y) in value:
+                    game_objects[thing].append(
+                        pygame.Rect(convert_position(x, y), OBJECT_SIZE)
+                    )
             server_ready = True
+        case MessageType.MOVE:
+            positions = json.loads(message["content"])
+            for thing, value in positions.items():
+                for (x, y) in value:
+                    # FIXME: This assumes the only values in the MOVE response
+                    # are for the hunter and prey
+                    game_objects[thing][0].update(convert_position(x, y), OBJECT_SIZE)
+        case MessageType.ERROR:
+            print_items.append(message["content"])
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
 
@@ -101,12 +131,26 @@ def main() -> None:
     pygame.display.set_caption("Electric Elves Game")
 
     screen = pygame.display.set_mode(SCREEN_SIZE)
+    tileset.image.convert()
+    tileset.rescale(SCALE)
+    tilemap.image = screen
+    tilemap.map = np.ones((Y_SPACES, X_SPACES), dtype=int) * 15
+    tilemap.map[0, 0] = 6
+    tilemap.map[0, -1] = 28
+    tilemap.map[-1, 0] = 8
+    tilemap.map[-1, -1] = 30
+    tilemap.map[0, 1:-1] = 17
+    tilemap.map[-1, 1:-1] = 19
+    tilemap.map[1:-1, 0] = 7
+    tilemap.map[1:-1, -1] = 29
+    tilemap.map[1:-1, 1:-1] = np.random.choice(
+        (12, 15, 23), size=(Y_SPACES - 2, X_SPACES - 2)
+    )
 
     clock = pygame.time.Clock()
 
     font = pygame.font.SysFont(None, 24)
 
-    messages = ["[SERVER] Test Message 1", "[SERVER] Test Message 2"]
     message_window = pygame.Rect(MESSAGE_AREA)
 
     # Connect to the server!
@@ -135,6 +179,11 @@ def main() -> None:
         LOG.debug("waiting for other client")
         sleep(0.1)
 
+    # Draw Messages
+    screen.fill("black")
+    screen.fill((127, 127, 127), message_window)
+    screen.blit(font.render("Messages", True, "white"), (825, 25))
+
     while True:
         for event in pygame.event.get():
             # Check if window should be closed
@@ -154,16 +203,18 @@ def main() -> None:
 
         clock.tick(60)
 
-        screen.fill("black")
-
-        # Draw Messages
-        screen.fill((127, 127, 127), message_window)
-        screen.blit(font.render("Messages", True, "white"), (825, 25))
-        for i, message in enumerate(messages):
+        for i, message in enumerate(print_items):
             screen.blit(font.render(message, True, "lightgray"), (825, 60 + i * 25))
 
-        pygame.draw.rect(screen, "red", game_objects["prey"])
-        pygame.draw.rect(screen, "blue", game_objects["hunter"])
+        tilemap.render()
+        for stone in game_objects["stone"]:
+            pygame.draw.rect(screen, "grey", stone)
+
+        for tree in game_objects["tree"]:
+            pygame.draw.rect(screen, "green", tree)
+
+        pygame.draw.rect(screen, "red", game_objects["prey"][0])
+        pygame.draw.rect(screen, "blue", game_objects["hunter"][0])
         pygame.display.flip()
 
 
