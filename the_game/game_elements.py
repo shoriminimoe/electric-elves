@@ -111,19 +111,19 @@ class Movable(Object):
 
         # wall collision detection
 
-        dx = np.sign(nx - self.x)
-        if dx != 0:
-            for x in range(self.x + dx, nx + dx, dx):
-                if map.grid[self.y][x] == CellType.WALL:
-                    nx = x - dx
-                    break
-    
-        dy = np.sign(ny - self.y)
-        if dy != 0:
-           for y in range(self.y + dy, ny + dy, dy):
-               if map.grid[y][self.x] == CellType.WALL:
-                    ny = y - dy
-                    break
+        #     dx = np.sign(nx - self.x)
+        #     if dx != 0:
+        #         for x in range(self.x + dx, nx + dx, dx):
+        #             if map.grid[self.y][x] == CellType.WALL:
+        #                 nx = x - dx
+        #                 break
+        #
+        #     dy = np.sign(ny - self.y)
+        #     if dy != 0:
+        #        for y in range(self.y + dy, ny + dy, dy):
+        #            if map.grid[y][self.x] == CellType.WALL:
+        #                 ny = y - dy
+        #                 break
 
         self.x, self.y = nx, ny
 
