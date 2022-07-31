@@ -1,15 +1,18 @@
-from enum import IntEnum, auto
-from collections import UserDict
-
-import logging
 import json
+import logging
+from collections import UserDict
+from enum import IntEnum, auto
+from typing import Any
+
+from websockets.typing import Data
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="[%(asctime)s] %(levelname)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 LOG = logging.getLogger(__name__)
+
 
 class MessageType(IntEnum):
     """MessageType enum
@@ -22,7 +25,13 @@ class MessageType(IntEnum):
            message type
     """
 
+    # Signals to the receiver that the sender is ready
+    READY = auto()
+    # Signals to the receiver that their last message failed
+    ERROR = auto()
     MOVE = auto()
+    # Signals to the receiver to quit
+    QUIT = auto()
 
 
 class Message(UserDict):
@@ -33,7 +42,7 @@ class Message(UserDict):
     websocket.
     """
 
-    def __init__(self, type: MessageType | int, content: str, **kwargs):
+    def __init__(self, type: MessageType | int, content: Any, **kwargs):
         if isinstance(type, int):
             type = MessageType(type)
 
@@ -41,7 +50,6 @@ class Message(UserDict):
             raise ValueError(f"{type} is not a valid MessageType")
 
         LOG.debug(f"Message(type:{type}, content:{content}")
-        self._type_value = type.value
         super().__init__(type=type, content=content, **kwargs)
 
     def serialize(self):
@@ -57,7 +65,7 @@ class Message(UserDict):
         return json.dumps(self.data)
 
     @classmethod
-    def deserialize(cls, message: str):
+    def deserialize(cls, message: Data | str):
         """Construct a Message from a serialized Message
 
         Use this method to construct a Message object from a serialized message
@@ -71,7 +79,7 @@ class Message(UserDict):
             >>> message = Message(type=MessageType.MOVE, content="up")
             >>> assert message == Message.deserialize(message.serialize())
         """
-        LOG.info(f"Creating new Message from message: {message}")
+        LOG.debug(f"deserializing: '{message!s}'")
         try:
             message_dict = json.loads(message)
         except json.JSONDecodeError as exc:
