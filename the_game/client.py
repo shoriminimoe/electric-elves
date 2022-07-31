@@ -106,11 +106,14 @@ def process_message(message: Message):
             positions = json.loads(message["content"])
             # TODO: set the tilemap `map` attribute here then call
             # tilemap.render() below
-            for thing, value in positions.items():
-                for (x, y) in value:
-                    game_objects[thing].append(
-                        pygame.Rect(convert_position(x, y), OBJECT_SIZE)
-                    )
+            for thing, values in positions.items():
+                LOG.info("%s positions: %s", thing, values)
+                for value in values:
+                    LOG.info("position: %s", value)
+                    if thing == "stone":
+                        tilemap.map[value] = 75
+                    elif thing == "tree":
+                        tilemap.map[value] = 118
             server_ready = True
         case MessageType.MOVE:
             positions = json.loads(message["content"])

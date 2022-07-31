@@ -121,12 +121,12 @@ async def handler(websocket: WebSocketServerProtocol):
                                 )
                             ],
                             "stone": [
-                                (item.x, item.y)
+                                (item.y, item.x)
                                 for item in game.objects
                                 if item.type == ObjectType.STONE
                             ],
                             "tree": [
-                                (item.x, item.y)
+                                (item.y, item.x)
                                 for item in game.objects
                                 if item.type == ObjectType.TREE
                             ],
