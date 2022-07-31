@@ -84,6 +84,12 @@ def process_message(message: Message):
             raise ValueError(f"invalid message type: {message['type']}")
 
 
+game_objects: dict[str, pygame.Rect] = {
+    "prey": pygame.Rect((300, 200), OBJECT_SIZE),
+    "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
+}
+
+
 def main() -> None:
     """Client entry point"""
     pygame.init()
@@ -94,11 +100,6 @@ def main() -> None:
     clock = pygame.time.Clock()
 
     font = pygame.font.SysFont(None, 24)
-
-    game_objects = {
-        "prey": pygame.Rect((300, 200), OBJECT_SIZE),
-        "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
-    }
 
     messages = ["[SERVER] Test Message 1", "[SERVER] Test Message 2"]
     message_window = pygame.Rect(MESSAGE_AREA)
