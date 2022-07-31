@@ -3,15 +3,15 @@ import json
 import logging
 import threading
 from collections import deque
+from pathlib import Path
 from time import sleep
 
 import pygame
 import websockets
 
-from game_elements import X_SPACES, Y_SPACES
-from messaging import Message, MessageType
-
-# from .tiles import Tilemap, Tileset
+from .game_elements import X_SPACES, Y_SPACES
+from .messaging import Message, MessageType
+from .tiles import Tilemap, Tileset
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
@@ -29,6 +29,8 @@ GAME_AREA = (
 )
 GRID_WIDTH = GAME_AREA[2] // X_SPACES
 GRID_HEIGHT = GAME_AREA[3] // Y_SPACES
+# The tileset is 16x16
+SCALE = GRID_WIDTH / 16
 OBJECT_SIZE = (GRID_WIDTH * 0.8, GRID_HEIGHT * 0.8)
 MESSAGE_AREA = (
     GAME_AREA[2],
@@ -36,6 +38,14 @@ MESSAGE_AREA = (
     SCREEN_SIZE[0] - GAME_AREA[2],
     SCREEN_SIZE[1],
 )
+tileset = Tileset(
+    Path(Path(__file__).parent, "static", "tileset.png"),
+    size=(GRID_WIDTH, GRID_HEIGHT),
+    margin=0,
+    spacing=0,
+)
+tileset.rescale(SCALE)
+tilemap = Tilemap(tileset, (Y_SPACES, X_SPACES), GRID_WIDTH)
 
 
 async def send(socket):
@@ -75,7 +85,7 @@ server_ready = False
 game_objects: dict[(str, list[pygame.Rect])] = {
     "prey": [pygame.Rect((300, 200), OBJECT_SIZE)],
     "hunter": [pygame.Rect((100, 500), OBJECT_SIZE)],
-    "stone": [],
+    "map": [],
     "tree": [],
 }
 
@@ -90,7 +100,7 @@ def process_message(message: Message):
         to be converted to pixels based on the screen size.
     """
     global server_ready
-    match message['type']:
+    match message["type"]:
         case MessageType.READY | MessageType.MOVE:
             positions = json.loads(message["content"])
             for thing, value in positions.items():
@@ -111,6 +121,7 @@ def main() -> None:
     pygame.display.set_caption("Electric Elves Game")
 
     screen = pygame.display.set_mode(SCREEN_SIZE)
+    tilemap.image = screen
 
     clock = pygame.time.Clock()
 

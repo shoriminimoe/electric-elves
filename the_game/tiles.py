@@ -43,13 +43,13 @@ class Tileset:
 class Tilemap:
     """A tilemap"""
 
-    def __init__(self, tileset, screen, size=(10, 20), tile_size=16, rect=None):
+    def __init__(self, tileset, size=(10, 20), tile_size=16, rect=None):
         self.size = size
         self.tileset = tileset
         self.map = np.zeros(size, dtype=int)
         self.tile_size = tile_size
 
-        self.image = screen
+        self.image = pygame.Surface(tuple(map(lambda x: x * tile_size, size)))
         if rect:
             self.rect = pygame.Rect(rect)
         else:

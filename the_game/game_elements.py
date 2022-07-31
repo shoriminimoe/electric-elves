@@ -29,7 +29,8 @@ class CellType(IntEnum):
     """Enumeration for setting cell contents"""
 
     EMPTY = auto()
-    WALL = auto()
+    STONE = auto()
+    TREE = auto()
 
 
 class Map:
