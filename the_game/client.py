@@ -11,6 +11,8 @@ import websockets
 from game_elements import X_SPACES, Y_SPACES
 from messaging import Message, MessageType
 
+# from .tiles import Tilemap, Tileset
+
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
 
