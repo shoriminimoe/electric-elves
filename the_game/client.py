@@ -45,7 +45,6 @@ tileset = Tileset(
     margin=0,
     spacing=0,
 )
-tileset.rescale(SCALE)
 tilemap = Tilemap(tileset, (Y_SPACES, X_SPACES), GRID_WIDTH)
 
 
@@ -124,6 +123,8 @@ def main() -> None:
     pygame.display.set_caption("Electric Elves Game")
 
     screen = pygame.display.set_mode(SCREEN_SIZE)
+    tileset.image.convert()
+    tileset.rescale(SCALE)
     tilemap.image = screen
     tilemap.map = np.full((Y_SPACES, X_SPACES), 15)
 
