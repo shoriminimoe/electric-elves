@@ -126,9 +126,18 @@ def main() -> None:
     tileset.image.convert()
     tileset.rescale(SCALE)
     tilemap.image = screen
-    # TODO: the `15` here is the index of the tileset. This is here for filler
-    # to make it work.
-    tilemap.map = np.full((Y_SPACES, X_SPACES), 15)
+    tilemap.map = np.ones((Y_SPACES, X_SPACES), dtype=int) * 15
+    tilemap.map[0, 0] = 6
+    tilemap.map[0, -1] = 28
+    tilemap.map[-1, 0] = 8
+    tilemap.map[-1, -1] = 30
+    tilemap.map[0, 1:-1] = 17
+    tilemap.map[-1, 1:-1] = 19
+    tilemap.map[1:-1, 0] = 7
+    tilemap.map[1:-1, -1] = 29
+    tilemap.map[1:-1, 1:-1] = np.random.choice(
+        (12, 15, 23), size=(Y_SPACES - 2, X_SPACES - 2)
+    )
 
     clock = pygame.time.Clock()
 
