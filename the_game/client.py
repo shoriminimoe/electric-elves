@@ -118,9 +118,7 @@ def process_message(message: Message):
                 for (x, y) in value:
                     # FIXME: This assumes the only values in the MOVE response
                     # are for the hunter and prey
-                    game_objects[thing][0] = pygame.Rect(
-                        convert_position(x, y), OBJECT_SIZE
-                    )
+                    game_objects[thing][0].update(convert_position(x, y), OBJECT_SIZE)
         case MessageType.ERROR:
             print_items.append(message["content"])
         case _:
