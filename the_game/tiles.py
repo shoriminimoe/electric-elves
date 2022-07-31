@@ -7,11 +7,12 @@ import pygame
 class Tileset:
     """A tileset"""
 
-    def __init__(self, file, size=(16, 16), margin=1, spacing=1):
+    def __init__(self, file, size=(16, 16), margin=1, spacing=1, offset=(0, 0)):
         self.file = file
         self.size = size
         self.margin = margin
         self.spacing = spacing
+        self.offset = (0, 0)
         self.image = pygame.image.load(file)
         self.scaled_image = self.image
         self.rect = self.scaled_image.get_rect()
@@ -23,8 +24,8 @@ class Tileset:
         self.tiles = []
         x0 = y0 = self.margin
         w, h = self.rect.size
-        dx = self.size[0] + self.spacing
-        dy = self.size[1] + self.spacing
+        dx = self.size[0] + self.spacing + self.offset[0]
+        dy = self.size[1] + self.spacing + self.offset[1]
 
         for x in range(x0, w, dx):
             for y in range(y0, h, dy):

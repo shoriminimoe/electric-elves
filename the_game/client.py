@@ -44,6 +44,7 @@ tileset = Tileset(
     size=(GRID_WIDTH, GRID_HEIGHT),
     margin=0,
     spacing=0,
+    offset=(1, 0),
 )
 tilemap = Tilemap(tileset, (Y_SPACES, X_SPACES), GRID_WIDTH)
 
