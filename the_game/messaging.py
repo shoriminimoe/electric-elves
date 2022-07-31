@@ -48,7 +48,6 @@ class Message(UserDict):
             raise ValueError(f"{type} is not a valid MessageType")
 
         LOG.debug(f"Message(type:{type}, content:{content}")
-        self._type_value = type.value
         super().__init__(type=type, content=content, **kwargs)
 
     def serialize(self):

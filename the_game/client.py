@@ -24,8 +24,8 @@ GAME_AREA = (
     800,
     SCREEN_SIZE[1],
 )
-GRID_WIDTH = GAME_AREA[2] / X_SPACES
-GRID_HEIGHT = GAME_AREA[3] / Y_SPACES
+GRID_WIDTH = GAME_AREA[2] // X_SPACES
+GRID_HEIGHT = GAME_AREA[3] // Y_SPACES
 OBJECT_SIZE = (GRID_WIDTH * 0.8, GRID_HEIGHT * 0.8)
 MESSAGE_AREA = (
     GAME_AREA[2],
@@ -110,16 +110,16 @@ def main() -> None:
     socket_thread.start()
 
     screen.fill("black")
-    screen.blit(
-        font.render("Waiting for server...", True, "lightgray"),
-        (SCREEN_SIZE[0] // 2 - 75, SCREEN_SIZE[1] // 2),
-    )
-    pygame.display.update()
 
     # Wait at this point until the server is ready i.e. waiting for 2 clients
     # to connect
     server_ready = False
     while not server_ready:
+        screen.blit(
+            font.render("Waiting for server...", True, "lightgray"),
+            (SCREEN_SIZE[0] // 2 - 75, SCREEN_SIZE[1] // 2),
+        )
+        pygame.display.update()
         LOG.debug("waiting for other client")
         if inbound_messages:
             message = Message.deserialize(inbound_messages.popleft())
