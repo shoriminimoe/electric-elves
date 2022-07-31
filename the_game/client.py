@@ -144,7 +144,7 @@ def main() -> None:
     tilemap.map[1:-1, 0] = 7
     tilemap.map[1:-1, -1] = 29
     tilemap.map[1:-1, 1:-1] = np.random.choice(
-        (12, 15, 23), size=(Y_SPACES - 2, X_SPACES - 2)
+        (12, 15, 15, 15, 23), size=(Y_SPACES - 2, X_SPACES - 2)
     )
 
     clock = pygame.time.Clock()
