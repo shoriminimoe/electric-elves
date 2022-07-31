@@ -117,10 +117,16 @@ def main() -> None:
     server_ready = False
     while not server_ready:
         screen.blit(
-            font.render("Waiting for server...", True, "lightgray"),
+            font.render("Waiting for game to start...", True, "lightgray"),
             (SCREEN_SIZE[0] // 2 - 75, SCREEN_SIZE[1] // 2),
         )
         pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (
+                event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
+            ):
+                msg_queue.append(Message(MessageType.QUIT, ""))
+                return
         LOG.debug("waiting for other client")
         if inbound_messages:
             message = Message.deserialize(inbound_messages.popleft())
