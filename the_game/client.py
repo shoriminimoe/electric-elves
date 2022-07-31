@@ -103,6 +103,8 @@ def process_message(message: Message):
     match message["type"]:
         case MessageType.READY | MessageType.MOVE:
             positions = json.loads(message["content"])
+            # TODO: set the tilemap `map` attribute here then call
+            # tilemap.render() below
             for thing, value in positions.items():
                 for (x, y) in value:
                     game_objects[thing].append(
@@ -160,11 +162,12 @@ def main() -> None:
     screen.fill((127, 127, 127), message_window)
     screen.blit(font.render("Messages", True, "white"), (825, 25))
 
-    for stone in game_objects["stone"]:
-        pygame.draw.rect(screen, "grey", stone)
-
-    for tree in game_objects["tree"]:
-        pygame.draw.rect(screen, "green", tree)
+    tilemap.render()
+    # for stone in game_objects["stone"]:
+    #     pygame.draw.rect(screen, "grey", stone)
+    #
+    # for tree in game_objects["tree"]:
+    #     pygame.draw.rect(screen, "green", tree)
 
     while True:
         for event in pygame.event.get():

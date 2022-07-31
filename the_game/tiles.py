@@ -1,3 +1,5 @@
+from itertools import cycle
+
 import numpy as np
 import pygame
 
@@ -67,6 +69,15 @@ class Tilemap:
         """Randomly set the tilemap"""
         n = len(self.tileset.tiles)
         self.map = np.random.randint(n, size=self.size)
+        self.render()
+
+    def set_ordered(self):
+        """Set the tilemap in order"""
+        n = len(self.tileset.tiles)
+        n_cells = self.size[0] * self.size[1]
+        tile_cycle = cycle(range(n))
+        array = [next(tile_cycle) for _ in range(n_cells)]
+        self.map = np.reshape(array, self.size)
         print(self.map)
         self.render()
 
