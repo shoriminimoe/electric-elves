@@ -85,7 +85,7 @@ server_ready = False
 game_objects: dict[(str, list[pygame.Rect])] = {
     "prey": [pygame.Rect((300, 200), OBJECT_SIZE)],
     "hunter": [pygame.Rect((100, 500), OBJECT_SIZE)],
-    "map": [],
+    "stone": [],
     "tree": [],
 }
 
