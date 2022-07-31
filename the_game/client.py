@@ -44,7 +44,7 @@ tileset = Tileset(
     size=(GRID_WIDTH, GRID_HEIGHT),
     margin=0,
     spacing=0,
-    offset=(1, 0),
+    offset=(-1, 0),
 )
 tilemap = Tilemap(tileset, (Y_SPACES, X_SPACES), GRID_WIDTH)
 
@@ -84,8 +84,8 @@ def convert_position(x: int, y: int) -> tuple[int, int]:
 
 server_ready = False
 game_objects: dict[(str, list[pygame.Rect])] = {
-    "prey": [pygame.Rect((300, 200), OBJECT_SIZE)],
-    "hunter": [pygame.Rect((100, 500), OBJECT_SIZE)],
+    "prey": [],
+    "hunter": [],
     "stone": [],
     "tree": [],
 }
@@ -102,7 +102,7 @@ def process_message(message: Message):
     """
     global server_ready
     match message["type"]:
-        case MessageType.READY | MessageType.MOVE:
+        case MessageType.READY:
             positions = json.loads(message["content"])
             # TODO: set the tilemap `map` attribute here then call
             # tilemap.render() below
@@ -112,6 +112,15 @@ def process_message(message: Message):
                         pygame.Rect(convert_position(x, y), OBJECT_SIZE)
                     )
             server_ready = True
+        case MessageType.MOVE:
+            positions = json.loads(message["content"])
+            for thing, value in positions.items():
+                for (x, y) in value:
+                    # FIXME: This assumes the only values in the MOVE response
+                    # are for the hunter and prey
+                    game_objects[thing][0] = pygame.Rect(
+                        convert_position(x, y), OBJECT_SIZE
+                    )
         case MessageType.ERROR:
             print_items.append(message["content"])
         case _:
@@ -178,11 +187,11 @@ def main() -> None:
     screen.blit(font.render("Messages", True, "white"), (825, 25))
 
     tilemap.render()
-    # for stone in game_objects["stone"]:
-    #     pygame.draw.rect(screen, "grey", stone)
-    #
-    # for tree in game_objects["tree"]:
-    #     pygame.draw.rect(screen, "green", tree)
+    for stone in game_objects["stone"]:
+        pygame.draw.rect(screen, "grey", stone)
+
+    for tree in game_objects["tree"]:
+        pygame.draw.rect(screen, "green", tree)
 
     while True:
         for event in pygame.event.get():
