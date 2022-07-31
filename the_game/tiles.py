@@ -11,7 +11,8 @@ class Tileset:
         self.margin = margin
         self.spacing = spacing
         self.image = pygame.image.load(file).convert()
-        self.rect = self.image.get_rect()
+        self.scaled_image = self.image
+        self.rect = self.scaled_image.get_rect()
         self.tiles = []
         self.load()
 
@@ -26,8 +27,14 @@ class Tileset:
         for x in range(x0, w, dx):
             for y in range(y0, h, dy):
                 tile = pygame.Surface(self.size)
-                tile.blit(self.image, (0, 0), (x, y, *self.size))
+                tile.blit(self.scaled_image, (0, 0), (x, y, *self.size))
                 self.tiles.append(tile)
+
+    def rescale(self, scale):
+        """Rescaled the tileset"""
+        self.scaled_image = pygame.transform.rotozoom(self.image, 0, scale)
+        self.rect = self.scaled_image.get_rect()
+        self.load()
 
     def __str__(self):
         return f"{self.__class__.__name__} file:{self.file} tile:{self.size}"
@@ -36,10 +43,11 @@ class Tileset:
 class Tilemap:
     """A tilemap"""
 
-    def __init__(self, tileset, screen, size=(10, 20), rect=None):
+    def __init__(self, tileset, screen, size=(10, 20), tile_size=16, rect=None):
         self.size = size
         self.tileset = tileset
         self.map = np.zeros(size, dtype=int)
+        self.tile_size = tile_size
 
         self.image = screen
         if rect:
@@ -53,7 +61,7 @@ class Tilemap:
         for i in range(m):
             for j in range(n):
                 tile = self.tileset.tiles[self.map[i, j]]
-                self.image.blit(tile, (j * 16, i * 16))
+                self.image.blit(tile, (j * self.tile_size, i * self.tile_size))
 
     def set_random(self):
         """Randomly set the tilemap"""
