@@ -14,7 +14,7 @@ from .game_elements import X_SPACES, Y_SPACES
 from .messaging import Message, MessageType
 from .tiles import Tilemap, Tileset
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 LOG = logging.getLogger(__name__)
 
 msg_queue: list = []  # list of messages to send to the server
