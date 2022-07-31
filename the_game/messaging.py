@@ -5,7 +5,7 @@ from enum import IntEnum, auto
 from typing import Any
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="[%(asctime)s] %(levelname)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -48,7 +48,6 @@ class Message(UserDict):
             raise ValueError(f"{type} is not a valid MessageType")
 
         LOG.debug(f"Message(type:{type}, content:{content}")
-        self._type_value = type.value
         super().__init__(type=type, content=content, **kwargs)
 
     def serialize(self):
@@ -78,7 +77,7 @@ class Message(UserDict):
             >>> message = Message(type=MessageType.MOVE, content="up")
             >>> assert message == Message.deserialize(message.serialize())
         """
-        LOG.info(f"Creating new Message from message: {message}")
+        LOG.debug(f"deserializing: '{message}'")
         try:
             message_dict = json.loads(message)
         except json.JSONDecodeError as exc:

@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
 
 msg_queue = []  # list of messages to send to the server
-inbound_messages = deque()
+msgs_received = deque()
 
 SCREEN_SIZE = (1100, 600)
 GAME_AREA = (
@@ -24,8 +24,8 @@ GAME_AREA = (
     800,
     SCREEN_SIZE[1],
 )
-GRID_WIDTH = GAME_AREA[2] / X_SPACES
-GRID_HEIGHT = GAME_AREA[3] / Y_SPACES
+GRID_WIDTH = GAME_AREA[2] // X_SPACES
+GRID_HEIGHT = GAME_AREA[3] // Y_SPACES
 OBJECT_SIZE = (GRID_WIDTH * 0.8, GRID_HEIGHT * 0.8)
 MESSAGE_AREA = (
     GAME_AREA[2],
@@ -49,7 +49,10 @@ async def recv(socket):
     while True:
         message = await socket.recv()
         LOG.debug(f"received message from server: {message}")
-        inbound_messages.append(message)
+        try:
+            process_message(Message.deserialize(message))
+        except ValueError:
+            LOG.warning("received invalid message: '%s'", message)
         await asyncio.sleep(0.1)
 
 
@@ -65,6 +68,13 @@ def convert_position(x: int, y: int) -> tuple[int, int]:
     return (x * GRID_WIDTH, y * GRID_HEIGHT)
 
 
+server_ready = False
+game_objects: dict[(str, pygame.Rect)] = {
+    "prey": pygame.Rect((300, 200), OBJECT_SIZE),
+    "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
+}
+
+
 def process_message(message: Message):
     """Process a server message
 
@@ -74,12 +84,13 @@ def process_message(message: Message):
         Game object positions come through indexed by the game grid. These need
         to be converted to pixels based on the screen size.
     """
+    global server_ready
     match message["type"]:
         case MessageType.READY | MessageType.MOVE:
             positions = json.loads(message["content"])
             for thing, (x, y) in positions.items():
-                positions[thing] = convert_position(x, y)
-            return positions
+                game_objects[thing] = pygame.Rect(convert_position(x, y), OBJECT_SIZE)
+            server_ready = True
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
 
@@ -95,11 +106,6 @@ def main() -> None:
 
     font = pygame.font.SysFont(None, 24)
 
-    game_objects = {
-        "prey": pygame.Rect((300, 200), OBJECT_SIZE),
-        "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
-    }
-
     messages = ["[SERVER] Test Message 1", "[SERVER] Test Message 2"]
     message_window = pygame.Rect(MESSAGE_AREA)
 
@@ -111,26 +117,23 @@ def main() -> None:
 
     screen.fill("black")
     screen.blit(
-        font.render("Waiting for server...", True, "lightgray"),
+        font.render("Waiting for game to start...", True, "lightgray"),
         (SCREEN_SIZE[0] // 2 - 75, SCREEN_SIZE[1] // 2),
     )
     pygame.display.update()
 
     # Wait at this point until the server is ready i.e. waiting for 2 clients
-    # to connect
-    server_ready = False
+    # to connect. `server_ready` is set to True once the READY message has been
+    # received and processed.
     while not server_ready:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (
+                event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
+            ):
+                msg_queue.append(Message(MessageType.QUIT, ""))
+                return
         LOG.debug("waiting for other client")
-        if inbound_messages:
-            message = Message.deserialize(inbound_messages.popleft())
-            if message["type"] == MessageType.READY:
-                # Any other messages from the server are discarded at this
-                # point
-                result = process_message(message)
-                for thing, position in result.items():
-                    game_objects[thing] = pygame.Rect(position, OBJECT_SIZE)
-                server_ready = True
-                break
+        sleep(0.1)
 
     while True:
         for event in pygame.event.get():
@@ -147,12 +150,7 @@ def main() -> None:
                 pygame.K_LEFT,
             ):
                 msg_queue.append(Message(MessageType.MOVE, event.key))
-                # FIXME: wait for new positions. this is a bad way to do it.
                 sleep(0.1)
-                message = Message.deserialize(inbound_messages.popleft())
-                result = process_message(message)
-                for thing, position in result.items():
-                    game_objects[thing] = pygame.Rect(position, OBJECT_SIZE)
 
         clock.tick(60)
 
