@@ -87,7 +87,6 @@ class Movable(Object):
 
     def move(self, direction: Direction, map: Map, amount=1):
         """Move object one space in `direction`"""
-
         nx, ny = self.x, self.y
 
         match direction:
@@ -102,19 +101,19 @@ class Movable(Object):
 
         # wall collision detection
 
-        dx = np.sign(nx - self.x)
-        if dx != 0:
-            for x in range(self.x + dx, nx + dx, dx):
-                if map.grid[self.y][x] == CellType.WALL:
-                    nx = x - dx
-                    break
-
-        dy = np.sign(ny - self.y)
-        if dy != 0:
-            for y in range(self.y + dy, ny + dy, dy):
-                if map.grid[y][self.x] == CellType.WALL:
-                    ny = y - dy
-                    break
+        # dx = np.sign(nx - self.x)
+        # if dx != 0:
+        #     for x in range(self.x + dx, nx + dx, dx):
+        #         if map.grid[self.y][x] == CellType.WALL:
+        #             nx = x - dx
+        #             break
+        #
+        # dy = np.sign(ny - self.y)
+        # if dy != 0:
+        #     for y in range(self.y + dy, ny + dy, dy):
+        #         if map.grid[y][self.x] == CellType.WALL:
+        #             ny = y - dy
+        #             break
 
         # bounds check
         if ny < 0:
