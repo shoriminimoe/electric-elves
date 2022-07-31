@@ -8,8 +8,8 @@ import websockets
 from websockets.exceptions import ConnectionClosed
 from websockets.server import WebSocketServerProtocol
 
-from game_elements import Direction, Game
-from messaging import Message, MessageType
+from .game_elements import Direction, Game, ObjectType
+from .messaging import Message, MessageType
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,14 +59,18 @@ def process_message(message: Message, sender: UUID) -> Message:
                 MessageType.MOVE,
                 json.dumps(
                     {
-                        "hunter": (
-                            game.players[0].x,
-                            game.players[0].y,
-                        ),
-                        "prey": (
-                            game.players[1].x,
-                            game.players[1].y,
-                        ),
+                        "hunter": [
+                            (
+                                game.players[0].x,
+                                game.players[0].y,
+                            )
+                        ],
+                        "prey": [
+                            (
+                                game.players[1].x,
+                                game.players[1].y,
+                            )
+                        ],
                     }
                 ),
             )
@@ -90,7 +94,7 @@ async def handler(websocket: WebSocketServerProtocol):
             )
             # make sure user client hasn't disconnected
             await websocket.ping()
-            
+
             await asyncio.sleep(1)
 
         LOG.info("Both clients connected! ")
@@ -104,15 +108,29 @@ async def handler(websocket: WebSocketServerProtocol):
                     MessageType.READY,
                     json.dumps(
                         {
-                            "hunter": (
-                                game.players[0].x,
-                                game.players[0].y,
-                            ),
-                            "prey": (
-                                game.players[1].x,
-                                game.players[1].y,
-                            ),
-                        }
+                            "hunter": [
+                                (
+                                    game.players[0].x,
+                                    game.players[0].y,
+                                )
+                            ],
+                            "prey": [
+                                (
+                                    game.players[1].x,
+                                    game.players[1].y,
+                                )
+                            ],
+                            "stone": [
+                                (item.x, item.y)
+                                for item in game.objects
+                                if item.type == ObjectType.STONE
+                            ],
+                            "tree": [
+                                (item.x, item.y)
+                                for item in game.objects
+                                if item.type == ObjectType.TREE
+                            ],
+                        },
                     ),
                 ).serialize()
             )

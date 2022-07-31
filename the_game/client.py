@@ -69,9 +69,11 @@ def convert_position(x: int, y: int) -> tuple[int, int]:
 
 
 server_ready = False
-game_objects: dict[(str, pygame.Rect)] = {
-    "prey": pygame.Rect((300, 200), OBJECT_SIZE),
-    "hunter": pygame.Rect((100, 500), OBJECT_SIZE),
+game_objects: dict[(str, list[pygame.Rect])] = {
+    "prey": [pygame.Rect((300, 200), OBJECT_SIZE)],
+    "hunter": [pygame.Rect((100, 500), OBJECT_SIZE)],
+    "stone": [],
+    "tree": [],
 }
 
 
@@ -88,8 +90,11 @@ def process_message(message: Message):
     match message['type']:
         case MessageType.READY | MessageType.MOVE:
             positions = json.loads(message["content"])
-            for thing, (x, y) in positions.items():
-                game_objects[thing] = pygame.Rect(convert_position(x, y), OBJECT_SIZE)
+            for thing, value in positions.items():
+                for (x, y) in value:
+                    game_objects[thing].append(
+                        pygame.Rect(convert_position(x, y), OBJECT_SIZE)
+                    )
             server_ready = True
         case _:
             raise ValueError(f"invalid message type: {message['type']}")
@@ -162,8 +167,13 @@ def main() -> None:
         for i, message in enumerate(messages):
             screen.blit(font.render(message, True, "lightgray"), (825, 60 + i * 25))
 
-        pygame.draw.rect(screen, "red", game_objects["prey"])
-        pygame.draw.rect(screen, "blue", game_objects["hunter"])
+        for stone in game_objects["stone"]:
+            pygame.draw.rect(screen, "grey", stone)
+        for tree in game_objects["tree"]:
+            pygame.draw.rect(screen, "green", tree)
+
+        pygame.draw.rect(screen, "red", game_objects["prey"][0])
+        pygame.draw.rect(screen, "blue", game_objects["hunter"][0])
         pygame.display.flip()
 
 
