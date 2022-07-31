@@ -88,6 +88,9 @@ async def handler(websocket: WebSocketServerProtocol):
             LOG.info(
                 f"waiting for 2 clients to connect. connected: {len(connected_clients)}"
             )
+            # make sure user client hasn't disconnected
+            await websocket.ping()
+
             await asyncio.sleep(1)
 
         if not game.initialized:
