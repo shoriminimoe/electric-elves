@@ -60,12 +60,12 @@ def process_message(message: Message, sender: UUID) -> Message:
                 json.dumps(
                     {
                         "hunter": (
-                            game.players[game.player_ids[0]].x,
-                            game.players[game.player_ids[0]].y,
+                            game.players[0].x,
+                            game.players[0].y,
                         ),
                         "prey": (
-                            game.players[game.player_ids[1]].x,
-                            game.players[game.player_ids[1]].y,
+                            game.players[1].x,
+                            game.players[1].y,
                         ),
                     }
                 ),
@@ -100,12 +100,12 @@ async def handler(websocket: WebSocketServerProtocol):
                     json.dumps(
                         {
                             "hunter": (
-                                game.players[game.player_ids[0]].x,
-                                game.players[game.player_ids[0]].y,
+                                game.players[0].x,
+                                game.players[0].y,
                             ),
                             "prey": (
-                                game.players[game.player_ids[1]].x,
-                                game.players[game.player_ids[1]].y,
+                                game.players[1].x,
+                                game.players[1].y,
                             ),
                         }
                     ),

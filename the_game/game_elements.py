@@ -1,5 +1,5 @@
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, IntEnum, auto
 from queue import Queue
 from uuid import UUID
@@ -60,10 +60,21 @@ class Map:
         return dist
 
 
+class ObjectType(IntEnum):
+    """Enumeration for player types"""
+
+    HUNTER = auto()
+    PREY = auto()
+    STONE = auto()
+    TREE = ()
+
+
 @dataclass
 class Object:
     """A game object"""
 
+    id: UUID
+    type: ObjectType
     x: int
     y: int
 
@@ -97,28 +108,15 @@ class Movable(Object):
             self.x = X_SPACES - 1
 
 
-class Obstacle(Object):
-    """An obstacle"""
-
-
-class PlayerType(IntEnum):
-    """Enumeration for player types"""
-
-    HUNTER = auto()
-    PREY = auto()
-
-
 @dataclass
 class Player(Movable):
     """A player"""
 
-    def __init__(self, x, y, map: Map):
-        super().__init__(x, y)
-        self.map = map
-        # used to store distances from a certain point to not have to
-        # repeatedly call the dist calc function when checking valid movements
-        self.distances = None
-        self.point_distances_calcd = [-1, -1]
+    map: Map
+    # used to store distances from a certain point to not have to
+    # repeatedly call the dist calc function when checking valid movements
+    distances: list | None = field(init=False, default=None)
+    point_distances_calcd: tuple[int, int] = field(init=False, default=(-1, -1))
 
     # mp = movement points
     def is_valid(self, x, y, nx, ny, mp):
@@ -135,68 +133,42 @@ class Player(Movable):
         self.distances = None
 
 
-class Hunter(Player):
-    """The hunter"""
-
-    def __init__(self, x, y, map: Map):
-        super().__init__(x, y, map)
-        self.type = PlayerType.HUNTER
-
-
-class Prey(Player):
-    """The prey"""
-
-    def __init__(self, x, y, map: Map):
-        super().__init__(x, y, map)
-        self.type = PlayerType.PREY
-
-
 class Game:
     """A game"""
 
     def __init__(self):
         self.map = Map(X_SPACES, Y_SPACES)
-        self.player_ids = []
-        self.players = {}
-        self.objects = {}
+        self.players = []
+        self.objects = []
         self.turns = 0
         self.initialized = False
 
     def initialize(self):
         """Generate the map and set initial positions"""
-        self.players[self.player_ids[0]] = Hunter(
-            random.choice(range(X_SPACES // 4)),
-            random.choice(range(Y_SPACES)),
-            self.map,
-        )
-        self.players[self.player_ids[1]] = Prey(
-            random.choice(range(X_SPACES // 4, X_SPACES)),
-            random.choice(range(Y_SPACES)),
-            self.map,
-        )
+        self.players[0].x = random.choice(range(X_SPACES // 4))
+        self.players[0].y = random.choice(range(Y_SPACES))
+        self.players[1].x = random.choice(range(3 * X_SPACES // 4, X_SPACES))
+        self.players[1].y = random.choice(range(Y_SPACES))
         self.turns = 0
         self.initialized = True
 
     def reset(self):
         """Reset the game"""
-        self.player_ids = []
-        self.players = {}
-        self.initialized = False
+        self.__init__()
 
     def init_player(self, player_id: UUID):
         """Add a player to the game"""
-        if len(self.player_ids) >= 2:
+        if len(self.players) >= 2:
             raise RuntimeError("maximum players are added")
-        if len(self.player_ids) == 0:
-            self.players[player_id] = Hunter(-1, -1, self.map)
+        if len(self.players) == 0:
+            self.players.append(Player(player_id, ObjectType.HUNTER, -1, -1, self.map))
         else:
-            self.players[player_id] = Prey(-1, -1, self.map)
-        self.player_ids.append(player_id)
+            self.players.append(Player(player_id, ObjectType.PREY, -1, -1, self.map))
 
     def move_player(self, player_id: UUID, direction: Direction):
         """Move a player in the given direction"""
-        current_player_id = self.player_ids[self.turns % 2]
-        if current_player_id != player_id:
+        current_player_idx = self.turns % 2
+        if self.players[current_player_idx].id != player_id:
             raise RuntimeError("not your turn")
-        self.players[current_player_id].move(direction)
+        self.players[current_player_idx].move(direction)
         self.turns += 1
