@@ -6,6 +6,7 @@ from collections import deque
 from pathlib import Path
 from time import sleep
 
+import numpy as np
 import pygame
 import websockets
 
@@ -124,6 +125,7 @@ def main() -> None:
 
     screen = pygame.display.set_mode(SCREEN_SIZE)
     tilemap.image = screen
+    tilemap.map = np.full((Y_SPACES, X_SPACES), 15)
 
     clock = pygame.time.Clock()
 
